@@ -1,6 +1,8 @@
 # BigBoiBot
 Just a fun lil bot. Features include: sending reminders, which are backed up in a JSON file, sending the weather (in the US), and other dumb stuff.
 
+This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessReaper/BigBoiBot), and is mostly a rewrite. A list of future updates is included in the Roadmap section below.
+
 ##  Extra Files
 For Big Boi Bot to run, you need to put the proper info into a configu.txt file in the same directory as the Python script file (sample file provided), put your bot token in a token.txt file in the same directory as the Python script file, and likewise with the Google Maps API Key in a mapskey.txt file. Also needs an empty reminders.json file. Replace the paths where Python reads the txt and json files with your own.
 
@@ -16,4 +18,14 @@ Geocoding provided by [Google Maps API](https://cloud.google.com/maps-platform/#
 Using [this wrapper](https://github.com/googlemaps/google-maps-services-python).
 
 ## TwitFix
-Uses [TwitFix](https://github.com/robinuniverse/TwitFix) to fix Twitter URLs.
+Uses [BetterTwitFix](https://github.com/dylanpdx/BetterTwitFix) to fix Twitter URLs.
+
+## Roadmap
+- ❌ Migrate bot.py to v2.0 of discord.py.
+- ❌ Update dependencies.
+- ❌ Update vxtwitter functionality.
+    - New functionality: Messages can be edited iff the tweet contains a video
+    - If detecting if the tweet contains a video is not feasible, edit all messages containing a tweet link.
+    - If editing messages of other users is not feasible, send a message, similar to the previous implementation.
+- ❌ Add functionality for the [OWL API](https://develop.battle.net/documentation/owl/community-apis). 
+    - If someone makes a Python wrapper for it before I get to it I'll probably use that.

@@ -1,3 +1,2 @@
-Owner ID=<Owner ID>
-Prefix=<Prefix>
-Playing=<Playing status>
+Prefix=
+Playing=
