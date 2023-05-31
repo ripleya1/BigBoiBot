@@ -21,11 +21,11 @@ Using [this wrapper](https://github.com/googlemaps/google-maps-services-python).
 Uses [BetterTwitFix](https://github.com/dylanpdx/BetterTwitFix) to fix Twitter URLs.
 
 ## Roadmap
-- ❌ Migrate bot.py to v2.0 of discord.py.
+- ❌ Migrate bot.py to v2.0 of discord.py. This includes converting all commands to be [slash commands](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html?highlight=slash#hybrid-commands).
 - ❌ Update dependencies.
 - ❌ Update vxtwitter functionality.
     - New functionality: Messages can be edited iff the tweet contains a video
     - If detecting if the tweet contains a video is not feasible, edit all messages containing a tweet link.
-    - If editing messages of other users is not feasible, send a message, similar to the previous implementation.
+    - If editing messages of other users is not feasible, send a message, similar to the previous implementation. Make this a [reply](https://discordpy.readthedocs.io/en/latest/api.html#discord.MessageType.reply).
 - ❌ Add functionality for the [OWL API](https://develop.battle.net/documentation/owl/community-apis). 
     - If someone makes a Python wrapper for it before I get to it I'll probably use that.

@@ -16,7 +16,7 @@ print(time.ctime() + " Bot starting...")
 starttime = time.time()
 
 # file paths
-directory = "/root/bot/"
+directory = "" # modify as needed
 jsonPath = directory + "reminders.json"
 tokenPath = directory + "token.txt"
 configPath = directory + "configu.txt"
@@ -37,7 +37,10 @@ with open(configPath, "r") as j:
     playing = (str(lines[1])[8:]).strip()
 
 # initialize variables
-bot = commands.Bot(command_prefix=prefix, help_command=None)
+# https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
+# TODO: make this more granular later
+botIntents = discord.Intents().all()
+bot = commands.Bot(command_prefix=prefix, help_command=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
 game = discord.Game(playing)
