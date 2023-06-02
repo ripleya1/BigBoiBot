@@ -39,6 +39,7 @@ with open(configPath, "r") as j:
 # initialize variables
 # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
 # TODO: make this more granular later
+# ex discord.Intents(guilds = True, members = True)
 botIntents = discord.Intents().all()
 bot = commands.Bot(command_prefix=prefix, help_command=None, intents=botIntents)
 botVersion = 2.00
@@ -55,6 +56,8 @@ async def on_ready():
     starttime = time.time()
     game = discord.Game(playing)
     await bot.change_presence(activity=game)
+    syncedCommands = await bot.tree.sync()
+    print(time.ctime() + " Synced " + str(len(syncedCommands)) + " slash commands.")
     print(time.ctime() + " Bot live!")
 
     # checking JSON for unsent reminders
@@ -113,8 +116,8 @@ def sortKey(x):
     return x["time"]
 
 # help command
-@bot.command()
-async def help(ctx):
+@bot.tree.command()
+async def help(interaction: discord.Interaction):
     embed = discord.Embed(title="Commands", description="Must use prefix `" + prefix + "` before command", color=embedColor)
     embed.add_field(name="info", value="Sends bot info.", inline=False)
     embed.add_field(name="ping", value="Pings the user.", inline=False)
@@ -123,7 +126,7 @@ async def help(ctx):
     embed.add_field(name="weather or w", value="Sends the weather. Type `" + prefix + "weather help` for usage help.", inline=False)
     embed.add_field(name="google or g", value="Sends Google search link.", inline=False)
     embed.add_field(name="duckduckgo or ddg", value="Sends DuckDuckGo search link.", inline=False)
-    await ctx.send(content=None, embed=embed)
+    await interaction.response.send_message(content=None, embed=embed)
 
 # info command
 @bot.command()
