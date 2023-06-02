@@ -116,6 +116,7 @@ def sortKey(x):
     return x["time"]
 
 # help command
+# TODO: add remind help as subcommand or maybe as a description
 @bot.tree.command()
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(title="Commands", description="Must use prefix `" + prefix + "` before command", color=embedColor)
@@ -129,8 +130,8 @@ async def help(interaction: discord.Interaction):
     await interaction.response.send_message(content=None, embed=embed)
 
 # info command
-@bot.command()
-async def info(ctx):
+@bot.tree.command()
+async def info(interaction: discord.Interaction):
     uptimesecs = round(time.time() - starttime)
     m, s = divmod(uptimesecs, 60)
     h, m = divmod(m, 60)
@@ -141,87 +142,79 @@ async def info(ctx):
     embed.add_field(name="Uptime", value=str(uptime), inline=False)
     embed.add_field(name="Version", value="Bot version: " + str(botVersion) + "\nDiscord.py version: " + str(discord.__version__) + " " + str(discord.version_info.releaselevel) + "\nPython version: " + str(version_info.major) + "." + str(version_info.minor) + "." + str(version_info.micro) + " " + str(version_info.releaselevel), inline=False)
     embed.add_field(name="View source code:", value="https://github.com/TheGrimlessReaper/BigBoiBot", inline=False)
-    await ctx.send(content=None, embed=embed)
+    await interaction.response.send_message(content=None, embed=embed)
 
 # ping command
-@bot.command()
-async def ping(ctx):
-    await ctx.send(str(ctx.author.mention) + " Pong!")
+@bot.tree.command()
+async def ping(interaction: discord.Interaction):
+    await interaction.response.send_message(str(interaction.user.mention) + " Pong!")
 
 # command that flips a coin
-@bot.command()
-async def coinflip(ctx):
+@bot.tree.command()
+async def coinflip(interaction: discord.Interaction):
     result = ["Heads", "Tails"]
-    await ctx.send(random.choice(result) + "!")
+    await interaction.response.send_message(random.choice(result) + "!")
 
 # command that searches google
-@bot.command(aliases=["g"])
-async def google(ctx, *args):
-    search = "{}".format("+".join(args))
-    await ctx.send("https://google.com/search?q=" + search)
+@bot.tree.command()
+async def google(interaction: discord.Interaction, search: str):
+    search = search.replace(" ", "+") # params are 1:1
+    await interaction.response.send_message("https://google.com/search?q=" + search)
 
 # command that searches DuckDuckGo
-@bot.command(aliases=["ddg"])
-async def duckduckgo(ctx, *args):
-    search = "{}".format("+".join(args))
-    await ctx.send("https://duckduckgo.com/?q=" + search)
+@bot.tree.command()
+async def duckduckgo(interaction: discord.Interaction, search: str):
+    search = search.replace(" ", "+") # params are 1:1
+    await interaction.response.send_message("https://duckduckgo.com/search?q=" + search)
 
 # remind command
-@bot.command(aliases=["r"])
-async def remind(ctx, *args):
-    if (args[0] == "help"):
-        embed = discord.Embed(title="Remind", description="Reminds users.", color=embedColor)
-        embed.add_field(name="Usage:", value="`" + prefix + "remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
-        await ctx.send(content=None, embed=embed)
+@bot.tree.command()
+async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: str):
+    # embed.add_field(name="Usage:", value="`" + prefix + "remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
+    ctime = int(time.time())
+    timeunits = str(timeunits.strip())
+    timenum = int(timenum)
+    remindauthor = str(interaction.user.mention)
+    remindchannel = interaction.channel.id
+    reminder = details
+
+    if (timeunits == "d" or timeunits == "day" or timeunits == "days" or timeunits == " d" or timeunits == " day" or timeunits == " days"):
+        finalremindtime = (timenum * 86400) + ctime
+        remindtimelongstr = "day"
+    elif (timeunits == "h" or timeunits == "hour" or timeunits == "hours" or timeunits == " h" or timeunits == " hour" or timeunits == " hours"):
+        finalremindtime = (timenum * 3600) + ctime
+        remindtimelongstr = "hour"
+    elif (timeunits == "m" or timeunits == "minute" or timeunits == "minutes" or timeunits == " m" or timeunits == " minute" or timeunits == " minutes"):
+        finalremindtime = (timenum * 60) + ctime
+        remindtimelongstr = "minute"
+    elif (timeunits == "s" or timeunits == "second" or timeunits == "seconds" or timeunits == " s" or timeunits == " second" or timeunits == " seconds"):
+        finalremindtime = timenum + ctime
+        remindtimelongstr = "second"
     else:
-        reminder = "{}".format(" ".join(args))
-        ctime = int(time.time())
-        sep = ";"
-        remindtime = str(reminder.split(sep, 2)[0])
-        remindtimestr = ''.join([i for i in remindtime if not i.isdigit()])
-        remindtimenum = ''.join([i for i in remindtime if i.isdigit()])
-        remindtimestr = str(remindtimestr.strip())
-        remindtimenum = int(remindtimenum)
-        remindauthor = str(ctx.message.author.mention)
-        remindchannel = ctx.message.channel.id
-        reminder = str((reminder.split(sep, 2)[1]).strip())
+        await interaction.response.send_message("Invalid time.")
+        return
 
-        if (remindtimestr == "d" or remindtimestr == "day" or remindtimestr == "days" or remindtimestr == " d" or remindtimestr == " day" or remindtimestr == " days"):
-            finalremindtime = (remindtimenum * 86400) + ctime
-            remindtimelongstr = "day"
-        elif (remindtimestr == "h" or remindtimestr == "hour" or remindtimestr == "hours" or remindtimestr == " h" or remindtimestr == " hour" or remindtimestr == " hours"):
-            finalremindtime = (remindtimenum * 3600) + ctime
-            remindtimelongstr = "hour"
-        elif (remindtimestr == "m" or remindtimestr == "minute" or remindtimestr == "minutes" or remindtimestr == " m" or remindtimestr == " minute" or remindtimestr == " minutes"):
-            finalremindtime = (remindtimenum * 60) + ctime
-            remindtimelongstr = "minute"
-        elif (remindtimestr == "s" or remindtimestr == "second" or remindtimestr == "seconds" or remindtimestr == " s" or remindtimestr == " second" or remindtimestr == " seconds"):
-            finalremindtime = remindtimenum + ctime
-            remindtimelongstr = "second"
-        else:
-            await ctx.send("Invalid time.")
-            return
+    if timenum == 1:
+        await interaction.response.send_message("Okay " + remindauthor + ", I'll remind you in " + str(timenum) + " " + remindtimelongstr + ".")
+    elif timenum > 1:
+        await interaction.response.send_message("Okay " + remindauthor + ", I'll remind you in " + str(timenum) + " " + remindtimelongstr + "s.")
+    else:
+        await interaction.response.send_message("Invalid time.")
+        return
 
-        if remindtimenum == 1:
-            await ctx.send("Okay " + remindauthor + ", I'll remind you in " + str(remindtimenum) + " " + remindtimelongstr + ".")
-        elif remindtimenum > 1:
-            await ctx.send("Okay " + remindauthor + ", I'll remind you in " + str(remindtimenum) + " " + remindtimelongstr + "s.")
-        else:
-            await ctx.send("Invalid time.")
-            return
-
-        # add reminder info to JSON
-        reminderList = []
-        if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
-            with open(jsonPath, "r") as j:
-                reminderList = list(json.load(j))
-        reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime, "channel": remindchannel}
-        reminderList.append(reminderDict)
-        with open(jsonPath, "w") as j:
-            json.dump(reminderList, j)
-        await asyncio.sleep(finalremindtime - ctime)
-        await ctx.send(remindauthor + " " + str(reminder))
-        delete_JSON_Element(reminderDict)
+    # TODO: fix this logic
+    # add reminder info to JSON
+    reminderList = []
+    if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
+        with open(jsonPath, "r") as j:
+            reminderList = list(json.load(j))
+    reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime}
+    reminderList.append(reminderDict)
+    with open(jsonPath, "w") as j:
+        json.dump(reminderList, j)
+    await asyncio.sleep(finalremindtime - ctime)
+    await interaction.followup.send(remindauthor + " " + str(reminder))
+    delete_JSON_Element(reminderDict)
 
 # prints to console when the bot disconnects
 @bot.event
@@ -237,14 +230,10 @@ async def on_resumed():
     print(time.ctime() + " Client reconnected!")
 
 # helper function for weather command that searches for latitude and longitude of the searched location using the Google Maps API
-def search(searchArray):
-    search = ""
-
-    for x in searchArray:
-        search += str(x) + " "
-
+# returns nothing if invalid location
+def search(searchStr):
     # searches for the location's coordinates using the google maps api
-    geo = m.geocode(search)
+    geo = m.geocode(searchStr)
     lat = float(round(geo[0]['geometry']['location']['lat'], 4))
     lon = float(round(geo[0]['geometry']['location']['lng'], 4))
     locArray = [lat, lon]
@@ -345,69 +334,60 @@ def getAlerts(lat, lon, desc):
     return embedString
 
 # command that gives the weather
-@bot.command(aliases=["w"])
-async def weather(ctx, *args):
-    if args:
-        async with ctx.channel.typing():
-            embedString = ""
-            temp = ""
+@bot.tree.command(description="Checks the weather. Types: hourly, daily, alerts, summary (default)")
+async def weather(interaction: discord.Interaction, location: str, type: str = None):
+    async with interaction.channel.typing():
+        embedString = ""
+        if(type):
+            type = type.lower()
+        try:
+            locArray = search(location)
+            lat = locArray[0]
+            lon = locArray[1]
+        except IndexError as e: # catch invalid location
+            await interaction.response.send_message("Invalid location. Try again.")
+            return
+        
+        if(type == "hourly" or type == "h"):
+            embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embedString = getHourly(lat, lon, 13)
+            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
+            embedString = embedString[:1023]
+            embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
 
-            if(args[0].lower() == "hourly" or args[0].lower() == "hour" or args[0].lower() == "daily" or args[0].lower() == "day" or args[0].lower() == "weekly" or args[0].lower() == "alerts" or args[0].lower() == "alert" or args[0].lower() == "help"):
-                temp = args[0].lower()
-                args = args[1:]
+        elif(type == "daily" or type == "day" or type == "d"):
+            embed = discord.Embed(title="Daily forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embedString = getDaily(lat, lon, 15)
+            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
+            embedString = embedString[:1023]
+            embed.add_field(name="Next 7 days:", value=embedString, inline=False)
 
-            # there won't be anything in args if the user types help which will throw an error otherwise
-            if(args):
-                locArray = search(args)
-                lat = locArray[0]
-                lon = locArray[1]
-                searchStr = ""
-            for i in args:
-                searchStr += i + " "
+        elif(type == "alerts" or type == "a"):
+            embed = discord.Embed(title="Alerts for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embedString = getAlerts(lat, lon, True)
+            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
+            embedString = embedString[:1023]
+            embed.add_field(name="Alerts:", value=embedString, inline=False)
 
-            if(temp == "hourly" or temp == "hour"):
-                embed = discord.Embed(title="Hourly forecast for " + searchStr + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
-                embedString = getHourly(lat, lon, 13)
-                # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-                embedString = embedString[:1023]
-                embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
-
-            elif(temp == "daily" or temp == "day" or temp == "weekly"):
-                embed = discord.Embed(title="Daily forecast for " + searchStr + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
-                embedString = getDaily(lat, lon, 15)
-                # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-                embedString = embedString[:1023]
-                embed.add_field(name="Next 7 days:", value=embedString, inline=False)
-
-            elif(temp == "alerts" or temp == "alert"):
-                embed = discord.Embed(title="Alerts for " + searchStr + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
-                embedString = getAlerts(lat, lon, True)
-                # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-                embedString = embedString[:1023]
-                embed.add_field(name="Alerts:", value=embedString, inline=False)
-
-            elif(temp == "help"):
-                embed = discord.Embed(title="Weather Help:", description="Usage for the Weather command.\nTyping weather [location] sends all commands listed at once (with more limited details).\nTyping weather [command] [location] sends that command (with more details).", color=0x3498db)
-                embed.add_field(name="Hourly:", value="Sends the hourly forecast for up to 12 hours after the current time.", inline=False)
-                embed.add_field(name="Daily:", value="Sends the daily forecast for up to 3 days after the current time.", inline=False)
-                embed.add_field(name="Alerts:", value="Sends all currently active alerts.", inline=False)
-
-            else: # forecast summary if no other args
-                embed = discord.Embed(title="Weather for " + searchStr + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
-                # hourly forecast
-                embedString = getHourly(lat, lon, 6)
-                embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
-                # daily forecast
-                embedString = getDaily(lat, lon, 6)
-                embed.add_field(name="Next 3 days:", value=embedString, inline=False)
-                # alerts
-                embedString = getAlerts(lat, lon, False)
-                # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-                embedString = embedString[:1023]
-                embed.add_field(name="Alerts:", value=embedString, inline=False)
-            if(temp != "help"):
-                embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
-            await ctx.send(content=None, embed=embed)
+        elif(type == "summary" or type == "s" or not type): # summary is the default if type is not specified
+            embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            # hourly forecast
+            embedString = getHourly(lat, lon, 6)
+            embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
+            # daily forecast
+            embedString = getDaily(lat, lon, 6)
+            embed.add_field(name="Next 3 days:", value=embedString, inline=False)
+            # alerts
+            embedString = getAlerts(lat, lon, False)
+            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
+            embedString = embedString[:1023]
+            embed.add_field(name="Alerts:", value=embedString, inline=False)
+        
+        if(type not in ["hourly", "h", "daily", "day", "d", "alerts", "a", "summary", "s"] and type):
+            await interaction.response.send_message("Invalid type. Valid types include: hourly, daily, alerts, summary.") # TODO: make a more interesting error message
+        else:
+            embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
+            await interaction.response.send_message(content=None, embed=embed)
 
 # DEPRECATED
 # on message sent
