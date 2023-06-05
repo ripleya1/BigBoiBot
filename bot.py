@@ -105,7 +105,7 @@ def delete_JSON_Element(element):
                 newReminderData.append(x)
     with open(jsonPath, "w") as k:
         json.dump(list(newReminderData), k)
-    printLogMessage("Element successfully deleted")
+    printLogMessage("JSON element successfully deleted")
 
 # background task that is only run once for the reminders that are backed up in the JSON but have not happened yet
 @tasks.loop(count=1)
@@ -172,25 +172,31 @@ async def duckduckgo(interaction: discord.Interaction, search: str):
     await interaction.response.send_message("https://duckduckgo.com/search?q=" + search)
 
 # remind command
-@bot.tree.command(description="Sends a reminder after a specified amount of time. Supported units: seconds, minutes, hours, days.")
-async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: str):
+@bot.tree.command(description="Sends a reminder after a specified amount of time.")
+@discord.app_commands.choices(timeunits = [
+    discord.app_commands.Choice(name="seconds", value = "s"), 
+    discord.app_commands.Choice(name="minutes", value = "m"),
+    discord.app_commands.Choice(name="hours", value = "h"),
+    discord.app_commands.Choice(name="days", value = "d")
+])
+async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: discord.app_commands.Choice[str]):
     ctime = int(time.time())
-    timeunits = str(timeunits.strip())
+    timeunits = timeunits.value
     timenum = int(timenum)
     remindauthor = str(interaction.user.mention)
     remindchannel = interaction.channel.id
     reminder = details
 
-    if (timeunits == "d" or timeunits == "day" or timeunits == "days" or timeunits == " d" or timeunits == " day" or timeunits == " days"):
+    if (timeunits == "d"):
         finalremindtime = (timenum * 86400) + ctime
         remindtimelongstr = "day"
-    elif (timeunits == "h" or timeunits == "hour" or timeunits == "hours" or timeunits == " h" or timeunits == " hour" or timeunits == " hours"):
+    elif (timeunits == "h"):
         finalremindtime = (timenum * 3600) + ctime
         remindtimelongstr = "hour"
-    elif (timeunits == "m" or timeunits == "minute" or timeunits == "minutes" or timeunits == " m" or timeunits == " minute" or timeunits == " minutes"):
+    elif (timeunits == "m"):
         finalremindtime = (timenum * 60) + ctime
         remindtimelongstr = "minute"
-    elif (timeunits == "s" or timeunits == "second" or timeunits == "seconds" or timeunits == " s" or timeunits == " second" or timeunits == " seconds"):
+    elif (timeunits == "s"):
         finalremindtime = timenum + ctime
         remindtimelongstr = "second"
     else:
@@ -211,7 +217,7 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
     if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
         with open(jsonPath, "r") as j:
             reminderList = list(json.load(j))
-    reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime}
+    reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime, "channel": remindchannel}
     reminderList.append(reminderDict)
     with open(jsonPath, "w") as j:
         json.dump(reminderList, j)
@@ -227,7 +233,6 @@ async def on_resumed():
 # prints to console when an interaction takes place
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
-    user = interaction.user
     printLogMessage("/" + interaction.command.name)
 
 # helper function for weather command that searches for latitude and longitude of the searched location using the Google Maps API
