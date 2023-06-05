@@ -58,7 +58,7 @@ m = googlemaps.Client(key=mapsKey)
 # runs on bot ready
 @bot.event
 async def on_ready():
-    starttime = datetime.datetime.now() # TODO: global?
+    starttime = datetime.datetime.now()
     game = discord.Game(playing)
     await bot.change_presence(activity=game)
     syncedCommands = await bot.tree.sync()
@@ -95,6 +95,16 @@ async def on_ready():
     else: # otherwise don't try to open the file because it'll throw an error
         printLogMessage("No JSON data to load")
 
+# resets time counter when bot reconnects
+@bot.event
+async def on_resumed():
+    starttime = datetime.datetime.now()
+
+# prints to console when an interaction takes place
+@bot.event
+async def on_interaction(interaction: discord.Interaction):
+    printLogMessage("/" + interaction.command.name)
+
 # helper function to delete a given JSON element
 def delete_JSON_Element(element):
     with open(jsonPath, "r") as j:
@@ -121,55 +131,44 @@ def sortKey(x):
     return x["time"]
 
 # help command
-# TODO: add remind help as subcommand or maybe as a description
-@bot.tree.command()
+@bot.tree.command(description="Lists all of the available commands.")
 async def help(interaction: discord.Interaction):
-    embed = discord.Embed(title="Commands", description="Must use a / before command", color=embedColor)
-    embed.add_field(name="info", value="Sends bot info.", inline=False)
-    embed.add_field(name="ping", value="Pings the user.", inline=False)
-    embed.add_field(name="coinflip", value="Flips a coin.", inline=False)
-    embed.add_field(name="remind", value="Sends a reminder after a user-specified amount of time.\nUsage: /remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
-    embed.add_field(name="weather", value="Checks the weather. Types: hourly, daily, alerts, summary (default).", inline=False)
-    embed.add_field(name="google", value="Sends Google search link.", inline=False)
-    embed.add_field(name="duckduckgo", value="Sends DuckDuckGo search link.", inline=False)
+    commmandList = await bot.tree.fetch_commands()
+    embed = discord.Embed(title="Commands", description="Must use a / before all commands", color=embedColor) 
+    for command in commmandList:
+        embed.add_field(name=command.name, value=command.description, inline=False)
     await interaction.response.send_message(content=None, embed=embed)
 
 # info command
-@bot.tree.command()
+@bot.tree.command(description="Sends info about the bot.")
 async def info(interaction: discord.Interaction):
     uptime = datetime.datetime.now() - starttime # timedelta object
     m, s = divmod(uptime.seconds, 60)
     h, m = divmod(m, 60)
-    uptime = "%0d:%02d:%02d:%02d" % (uptime.days, h, m, s)
+    uptimeStr = str("%0d:%02d:%02d:%02d" % (uptime.days, h, m, s))
     embed = discord.Embed(title="Bot info", color=embedColor)
     embed.add_field(name="Ping", value=str(int(bot.latency * 1000)) + " ms", inline=False)
-    embed.add_field(name="Uptime", value=str(uptime), inline=False)
+    embed.add_field(name="Uptime", value=uptimeStr, inline=False)
     embed.add_field(name="Version", value="Bot version: " + str(botVersion) + "\nDiscord.py version: " + str(discord.__version__) + " " + str(discord.version_info.releaselevel) + "\nPython version: " + str(version_info.major) + "." + str(version_info.minor) + "." + str(version_info.micro) + " " + str(version_info.releaselevel), inline=False)
-    embed.add_field(name="View source code:", value="https://github.com/TheGrimlessReaper/BigBoiBot", inline=False)
+    embed.add_field(name="View source code:", value="https://github.com/ripleya1/BigBoiBot", inline=False)
     await interaction.response.send_message(content=None, embed=embed)
 
 # ping command
-@bot.tree.command()
+@bot.tree.command(description="Pings the user.")
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(str(interaction.user.mention) + " Pong!")
 
 # command that flips a coin
-@bot.tree.command()
+@bot.tree.command(description="Flips a coin.")
 async def coinflip(interaction: discord.Interaction):
     result = ["Heads", "Tails"]
     await interaction.response.send_message(random.choice(result) + "!")
 
 # command that searches google
-@bot.tree.command()
+@bot.tree.command(description="Sends a Google search link.")
 async def google(interaction: discord.Interaction, search: str):
     search = search.replace(" ", "+") # params are 1:1
     await interaction.response.send_message("https://google.com/search?q=" + search)
-
-# command that searches DuckDuckGo
-@bot.tree.command()
-async def duckduckgo(interaction: discord.Interaction, search: str):
-    search = search.replace(" ", "+") # params are 1:1
-    await interaction.response.send_message("https://duckduckgo.com/search?q=" + search)
 
 # remind command
 @bot.tree.command(description="Sends a reminder after a specified amount of time.")
@@ -224,16 +223,6 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
     await asyncio.sleep(finalremindtime - ctime)
     await interaction.followup.send(remindauthor + " " + str(reminder))
     delete_JSON_Element(reminderDict)
-
-# resets time counter when bot reconnects
-@bot.event
-async def on_resumed():
-    starttime = datetime.datetime.now()
-
-# prints to console when an interaction takes place
-@bot.event
-async def on_interaction(interaction: discord.Interaction):
-    printLogMessage("/" + interaction.command.name)
 
 # helper function for weather command that searches for latitude and longitude of the searched location using the Google Maps API
 # returns nothing if invalid location
