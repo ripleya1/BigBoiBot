@@ -339,42 +339,48 @@ def getAlerts(lat, lon, desc):
     return embedString
 
 # command that gives the weather
-@bot.tree.command(description="Checks the weather. Types: hourly, daily, alerts, summary (default).")
-async def weather(interaction: discord.Interaction, location: str, type: str = None):
+@bot.tree.command(description="Checks the weather. By default, a forecast summary is sent if no forecasttype is selected.")
+@discord.app_commands.choices(forecasttype = [
+    discord.app_commands.Choice(name="summary", value = "s"), 
+    discord.app_commands.Choice(name="hourly", value = "h"),
+    discord.app_commands.Choice(name="daily", value = "d"),
+    discord.app_commands.Choice(name="alerts", value = "a")
+])
+async def weather(interaction: discord.Interaction, location: str, forecasttype: discord.app_commands.Choice[str] = None):
     async with interaction.channel.typing():
         embedString = ""
-        if(type):
-            type = type.lower()
+        if(forecasttype):
+            forecasttype = forecasttype.value
         try:
             locArray = search(location)
             lat = locArray[0]
             lon = locArray[1]
-        except IndexError as e: # catch invalid location
+        except IndexError: # catch invalid location
             await interaction.response.send_message("Invalid location. Try again.")
             return
         
-        if(type == "hourly" or type == "h"):
+        if(forecasttype == "h"):
             embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
             embedString = getHourly(lat, lon, 13)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
 
-        elif(type == "daily" or type == "day" or type == "d"):
+        elif(forecasttype == "d"):
             embed = discord.Embed(title="Daily forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
             embedString = getDaily(lat, lon, 15)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Next 7 days:", value=embedString, inline=False)
 
-        elif(type == "alerts" or type == "a"):
+        elif(forecasttype == "a"):
             embed = discord.Embed(title="Alerts for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
             embedString = getAlerts(lat, lon, True)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Alerts:", value=embedString, inline=False)
 
-        elif(type == "summary" or type == "s" or not type): # summary is the default if type is not specified
+        elif(forecasttype == "s" or not forecasttype): # summary is the default if type is not specified
             embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
             # hourly forecast
             embedString = getHourly(lat, lon, 6)
@@ -388,7 +394,7 @@ async def weather(interaction: discord.Interaction, location: str, type: str = N
             embedString = embedString[:1023]
             embed.add_field(name="Alerts:", value=embedString, inline=False)
         
-        if(type not in ["hourly", "h", "daily", "day", "d", "alerts", "a", "summary", "s"] and type):
+        if(forecasttype not in ["h", "d", "a", "s"] and forecasttype):
             await interaction.response.send_message("Invalid type. Valid types include: hourly, daily, alerts, summary.") # TODO: make a more interesting error message
         else:
             embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
