@@ -38,22 +38,18 @@ with open(mapsKeyPath, "r") as j:
 # read from config file
 with open(configPath, "r") as j:
     lines = j.readlines()
-    prefix = (str((lines[0])[7:])).strip()
-    playing = (str(lines[1])[8:]).strip()
+    playing = (str(lines[0])[8:]).strip()
 
 # initialize variables
-# https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
-# TODO: make this more granular later
-# ex discord.Intents(guilds = True, members = True)
-botIntents = discord.Intents().all()
-bot = commands.Bot(command_prefix=prefix, help_command=None, intents=botIntents)
+botIntents = discord.Intents(messages = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
+bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
 game = discord.Game(playing)
 
 # create objects for the api clients
-n = noaa.NOAA()
-m = googlemaps.Client(key=mapsKey)
+noaaClient = noaa.NOAA()
+mapsClient = googlemaps.Client(key=mapsKey)
 
 # runs on bot ready
 @bot.event
@@ -79,7 +75,7 @@ async def on_ready():
             for x in reminderData:
                 if int(x['time']) <= int(time.time()): # if the JSON element's time is before or at the current time send the reminder now with a message at the beginning
                     channel = bot.get_channel(int(x["channel"]))
-                    await channel.send("This reminder was sent late because of the bot being offline at the time of the original requested reminder time.\n" + str(x["author"]) + " " + str(x["reminder"]))
+                    await channel.send(str(x["author"]) + " " + str(x["reminder"]) + "\nThis reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
                     delete_JSON_Element(x)
                 elif int(x["time"]) > int(time.time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
                     waitBool = True
@@ -210,7 +206,6 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
         await interaction.response.send_message("Invalid time.")
         return
 
-    # TODO: fix this logic
     # add reminder info to JSON
     reminderList = []
     if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
@@ -228,7 +223,7 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
 # returns nothing if invalid location
 def search(searchStr):
     # searches for the location's coordinates using the google maps api
-    geo = m.geocode(searchStr)
+    geo = mapsClient.geocode(searchStr)
     lat = float(round(geo[0]['geometry']['location']['lat'], 4))
     lon = float(round(geo[0]['geometry']['location']['lng'], 4))
     locArray = [lat, lon]
@@ -236,7 +231,7 @@ def search(searchStr):
 
 # helper function for weather command that returns a string for the hourly forecast
 def getHourly(lat, lon, len):
-    hourlyForecasts = n.points_forecast(lat, lon, hourly=True)
+    hourlyForecasts = noaaClient.points_forecast(lat, lon, hourly=True)
     # datetime object of the current time in GMT
     currentTimeGMT = datetime.datetime.now(datetime.timezone.utc)
 
@@ -266,7 +261,7 @@ def getDaily(lat, lon, len):
     embedString = ""
 
     i = 0
-    dailyForecasts = n.points_forecast(lat, lon, hourly=False)
+    dailyForecasts = noaaClient.points_forecast(lat, lon, hourly=False)
     for f in dailyForecasts['properties']['periods']:
         # converting the datetime object we're iterating at to seconds since epoch
         endT = datetime.datetime.strptime(f['endTime'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
@@ -292,7 +287,7 @@ def getAlerts(lat, lon, desc):
     embedString = ""
     pointStr = str(lat) + "," + str(lon)
     paramsDict = {'point': pointStr}
-    alerts = n.alerts(active=1, **paramsDict)
+    alerts = noaaClient.alerts(active=1, **paramsDict)
     activeAlerts = False
 
     for f in alerts['features']:
