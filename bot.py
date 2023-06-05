@@ -11,9 +11,14 @@ from sys import version_info
 import googlemaps
 from noaa_sdk import noaa
 
+# helper function that prints a formatted message with the current time given a string
+def printLogMessage(message: str):
+    print((datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + " " + message)
+
 # starting bot
-print(time.ctime() + " Bot starting...")
-starttime = time.time()
+printLogMessage("Bot starting...")
+global starttime 
+starttime = datetime.datetime.now()
 
 # file paths
 directory = "" # modify as needed
@@ -53,22 +58,22 @@ m = googlemaps.Client(key=mapsKey)
 # runs on bot ready
 @bot.event
 async def on_ready():
-    starttime = time.time()
+    starttime = datetime.datetime.now() # TODO: global?
     game = discord.Game(playing)
     await bot.change_presence(activity=game)
     syncedCommands = await bot.tree.sync()
-    print(time.ctime() + " Synced " + str(len(syncedCommands)) + " slash commands.")
-    print(time.ctime() + " Bot live!")
+    printLogMessage("Synced " + str(len(syncedCommands)) + " slash commands")
+    printLogMessage("Bot live!")
 
     # checking JSON for unsent reminders
-    print("Loading JSON data...")
+    printLogMessage("Loading JSON data...")
     # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
     if path.getsize(jsonPath) > 2:
         with open(jsonPath) as j:
             waitBool = False
             reminderData = []
             reminderData = list(json.load(j))
-            print(reminderData)
+            # printLogMessage(str(reminderData))
             waitForList = []
 
             for x in reminderData:
@@ -85,10 +90,10 @@ async def on_ready():
             waitForList.sort(key=sortKey)
             # start background task that sends reminders later
             wait.start(waitForList)
-        print("JSON data successfully loaded")
+        printLogMessage("JSON data successfully loaded")
 
     else: # otherwise don't try to open the file because it'll throw an error
-        print("No JSON data to load")
+        printLogMessage("No JSON data to load")
 
 # helper function to delete a given JSON element
 def delete_JSON_Element(element):
@@ -100,7 +105,7 @@ def delete_JSON_Element(element):
                 newReminderData.append(x)
     with open(jsonPath, "w") as k:
         json.dump(list(newReminderData), k)
-    print("Element successfully deleted")
+    printLogMessage("Element successfully deleted")
 
 # background task that is only run once for the reminders that are backed up in the JSON but have not happened yet
 @tasks.loop(count=1)
@@ -119,24 +124,23 @@ def sortKey(x):
 # TODO: add remind help as subcommand or maybe as a description
 @bot.tree.command()
 async def help(interaction: discord.Interaction):
-    embed = discord.Embed(title="Commands", description="Must use prefix `" + prefix + "` before command", color=embedColor)
+    embed = discord.Embed(title="Commands", description="Must use a / before command", color=embedColor)
     embed.add_field(name="info", value="Sends bot info.", inline=False)
     embed.add_field(name="ping", value="Pings the user.", inline=False)
     embed.add_field(name="coinflip", value="Flips a coin.", inline=False)
-    embed.add_field(name="remind or r", value="Sends a reminder after a user-specified amount of time.\nUsage: `" + prefix + "remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
-    embed.add_field(name="weather or w", value="Sends the weather. Type `" + prefix + "weather help` for usage help.", inline=False)
-    embed.add_field(name="google or g", value="Sends Google search link.", inline=False)
-    embed.add_field(name="duckduckgo or ddg", value="Sends DuckDuckGo search link.", inline=False)
+    embed.add_field(name="remind", value="Sends a reminder after a user-specified amount of time.\nUsage: /remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
+    embed.add_field(name="weather", value="Checks the weather. Types: hourly, daily, alerts, summary (default).", inline=False)
+    embed.add_field(name="google", value="Sends Google search link.", inline=False)
+    embed.add_field(name="duckduckgo", value="Sends DuckDuckGo search link.", inline=False)
     await interaction.response.send_message(content=None, embed=embed)
 
 # info command
 @bot.tree.command()
 async def info(interaction: discord.Interaction):
-    uptimesecs = round(time.time() - starttime)
-    m, s = divmod(uptimesecs, 60)
+    uptime = datetime.datetime.now() - starttime # timedelta object
+    m, s = divmod(uptime.seconds, 60)
     h, m = divmod(m, 60)
-    d, h = divmod(h, 24)
-    uptime = "%0d:%02d:%02d:%02d" % (d, h, m, s)
+    uptime = "%0d:%02d:%02d:%02d" % (uptime.days, h, m, s)
     embed = discord.Embed(title="Bot info", color=embedColor)
     embed.add_field(name="Ping", value=str(int(bot.latency * 1000)) + " ms", inline=False)
     embed.add_field(name="Uptime", value=str(uptime), inline=False)
@@ -168,9 +172,8 @@ async def duckduckgo(interaction: discord.Interaction, search: str):
     await interaction.response.send_message("https://duckduckgo.com/search?q=" + search)
 
 # remind command
-@bot.tree.command()
+@bot.tree.command(description="Sends a reminder after a specified amount of time. Supported units: seconds, minutes, hours, days.")
 async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: str):
-    # embed.add_field(name="Usage:", value="`" + prefix + "remind <time><units>; <reminder>`\nSupported units: seconds, minutes, hours, days", inline=False)
     ctime = int(time.time())
     timeunits = str(timeunits.strip())
     timenum = int(timenum)
@@ -216,18 +219,16 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
     await interaction.followup.send(remindauthor + " " + str(reminder))
     delete_JSON_Element(reminderDict)
 
-# prints to console when the bot disconnects
-@bot.event
-async def on_disconnect():
-    while(bot.is_closed()):
-        print(time.ctime() + " Client disconnected")
-        await asyncio.sleep(5)
-
-# prints to console when bot reconnects
+# resets time counter when bot reconnects
 @bot.event
 async def on_resumed():
-    starttime = time.time()
-    print(time.ctime() + " Client reconnected!")
+    starttime = datetime.datetime.now()
+
+# prints to console when an interaction takes place
+@bot.event
+async def on_interaction(interaction: discord.Interaction):
+    user = interaction.user
+    printLogMessage("/" + interaction.command.name)
 
 # helper function for weather command that searches for latitude and longitude of the searched location using the Google Maps API
 # returns nothing if invalid location
@@ -320,7 +321,6 @@ def getAlerts(lat, lon, desc):
             # add the alert to the embed
             embedString += (f['properties']['event'] + " until " + endTObj.strftime("%B %d, %Y at %I:%M %p") + "\n")
             if(desc):
-                print("desc")
                 embedString += (":" + f['properties']['description'] + "\n")
 
     if(not activeAlerts):
@@ -334,7 +334,7 @@ def getAlerts(lat, lon, desc):
     return embedString
 
 # command that gives the weather
-@bot.tree.command(description="Checks the weather. Types: hourly, daily, alerts, summary (default)")
+@bot.tree.command(description="Checks the weather. Types: hourly, daily, alerts, summary (default).")
 async def weather(interaction: discord.Interaction, location: str, type: str = None):
     async with interaction.channel.typing():
         embedString = ""
