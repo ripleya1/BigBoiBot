@@ -17,7 +17,6 @@ def printLogMessage(message: str):
 
 # starting bot
 printLogMessage("Bot starting...")
-global starttime 
 starttime = datetime.datetime.now()
 
 # file paths
@@ -41,7 +40,7 @@ with open(configPath, "r") as j:
     playing = (str(lines[0])[8:]).strip()
 
 # initialize variables
-botIntents = discord.Intents(messages = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
+botIntents = discord.Intents(messages = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
@@ -61,6 +60,12 @@ async def on_ready():
     printLogMessage("Synced " + str(len(syncedCommands)) + " slash commands")
     printLogMessage("Bot live!")
 
+    await checkRemindersJson()
+
+# helper function for on_ready that checks the reminders json for any remaining reminders,
+# sends the reminder if the time for it has passed,
+# and waits to send the reminder until the time for it happens if it has not
+async def checkRemindersJson():
     # checking JSON for unsent reminders
     printLogMessage("Loading JSON data...")
     # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
@@ -73,9 +78,9 @@ async def on_ready():
             waitForList = []
 
             for x in reminderData:
-                if int(x['time']) <= int(time.time()): # if the JSON element's time is before or at the current time send the reminder now with a message at the beginning
+                if int(x['time']) < int(time.time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
                     channel = bot.get_channel(int(x["channel"]))
-                    await channel.send(str(x["author"]) + " " + str(x["reminder"]) + "\nThis reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
+                    await channel.send(str(x["author"]) + " " + str(x["reminder"]) + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
                     delete_JSON_Element(x)
                 elif int(x["time"]) > int(time.time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
                     waitBool = True
@@ -162,6 +167,7 @@ async def coinflip(interaction: discord.Interaction):
 
 # command that searches google
 @bot.tree.command(description="Sends a Google search link.")
+@discord.app_commands.describe(search="What you want to search.")
 async def google(interaction: discord.Interaction, search: str):
     search = search.replace(" ", "+") # params are 1:1
     await interaction.response.send_message("https://google.com/search?q=" + search)
@@ -174,6 +180,10 @@ async def google(interaction: discord.Interaction, search: str):
     discord.app_commands.Choice(name="hours", value = "h"),
     discord.app_commands.Choice(name="days", value = "d")
 ])
+@discord.app_commands.describe(
+    details="The message sent when being reminded.",
+    timenum="The number of the amount of time until the reminder is sent.",
+    timeunits="The units of time of the amount of time until the reminder is sent.")
 async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: discord.app_commands.Choice[str]):
     ctime = int(time.time())
     timeunits = timeunits.value
@@ -328,10 +338,13 @@ def getAlerts(lat, lon, desc):
     discord.app_commands.Choice(name="summary", value = "s"), 
     discord.app_commands.Choice(name="hourly", value = "h"),
     discord.app_commands.Choice(name="daily", value = "d"),
-    discord.app_commands.Choice(name="alerts", value = "a")
-])
+    discord.app_commands.Choice(name="alerts", value = "a")])
+@discord.app_commands.describe(
+    location = "The location that the forecast is for.", 
+    forecasttype = "The type of forecast.")
 async def weather(interaction: discord.Interaction, location: str, forecasttype: discord.app_commands.Choice[str] = None):
     async with interaction.channel.typing():
+        embed = discord.Embed()
         embedString = ""
         if(forecasttype):
             forecasttype = forecasttype.value
@@ -343,7 +356,21 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             await interaction.response.send_message("Invalid location. Try again.")
             return
         
-        if(forecasttype == "h"):
+        if(forecasttype == "s" or not forecasttype): # note that this is the default
+            embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            # hourly forecast
+            embedString = getHourly(lat, lon, 6)
+            embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
+            # daily forecast
+            embedString = getDaily(lat, lon, 6)
+            embed.add_field(name="Next 3 days:", value=embedString, inline=False)
+            # alerts
+            embedString = getAlerts(lat, lon, False)
+            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
+            embedString = embedString[:1023]
+            embed.add_field(name="Alerts:", value=embedString, inline=False)
+
+        elif(forecasttype == "h"):
             embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
             embedString = getHourly(lat, lon, 13)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
@@ -363,26 +390,9 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Alerts:", value=embedString, inline=False)
-
-        elif(forecasttype == "s" or not forecasttype): # summary is the default if type is not specified
-            embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
-            # hourly forecast
-            embedString = getHourly(lat, lon, 6)
-            embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
-            # daily forecast
-            embedString = getDaily(lat, lon, 6)
-            embed.add_field(name="Next 3 days:", value=embedString, inline=False)
-            # alerts
-            embedString = getAlerts(lat, lon, False)
-            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-            embedString = embedString[:1023]
-            embed.add_field(name="Alerts:", value=embedString, inline=False)
         
-        if(forecasttype not in ["h", "d", "a", "s"] and forecasttype):
-            await interaction.response.send_message("Invalid type. Valid types include: hourly, daily, alerts, summary.") # TODO: make a more interesting error message
-        else:
-            embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
-            await interaction.response.send_message(content=None, embed=embed)
+        embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
+        await interaction.response.send_message(content=None, embed=embed)
 
 # DEPRECATED
 # on message sent
