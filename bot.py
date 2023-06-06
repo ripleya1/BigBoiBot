@@ -38,13 +38,21 @@ with open(mapsKeyPath, "r") as j:
 with open(configPath, "r") as j:
     lines = j.readlines()
     playing = (str(lines[0])[8:]).strip()
+    fixTwitter = (str(lines[1])[18:]).strip().lower()
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
+weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
+if(fixTwitter == "t" or fixTwitter == "true" or fixTwitter == "1"):
+    fixTwitter = True
+elif(fixTwitter == "f" or fixTwitter == "false" or fixTwitter == "0"):
+    fixTwitter = False
+else:
+    fixTwitter = True
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
@@ -59,6 +67,8 @@ async def on_ready():
     syncedCommands = await bot.tree.sync()
     printLogMessage("Synced " + str(len(syncedCommands)) + " slash commands")
     printLogMessage("Bot live!")
+    if(fixTwitter):
+        printLogMessage("Fixing twitter video links")
 
     await checkRemindersJson()
 
@@ -255,7 +265,7 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             return
         
         if(forecasttype == "s" or not forecasttype): # note that this is the default
-            embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embed = discord.Embed(title="Weather for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             # hourly forecast
             embedString = getHourly(lat, lon, 6)
             embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
@@ -269,21 +279,21 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             embed.add_field(name="Alerts:", value=embedString, inline=False)
 
         elif(forecasttype == "h"):
-            embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getHourly(lat, lon, 13)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
 
         elif(forecasttype == "d"):
-            embed = discord.Embed(title="Daily forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embed = discord.Embed(title="Daily forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getDaily(lat, lon, 15)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
             embed.add_field(name="Next 7 days:", value=embedString, inline=False)
 
         elif(forecasttype == "a"):
-            embed = discord.Embed(title="Alerts for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=0x3498db)
+            embed = discord.Embed(title="Alerts for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getAlerts(lat, lon, True)
             # embed string needs to be less than 1024 characters because of a limitation with the Discord API
             embedString = embedString[:1023]
@@ -399,23 +409,24 @@ def getAlerts(lat, lon, desc):
 # sends a silent message
 @bot.event
 async def on_message(message: discord.Message):
-    if message.author != bot.user: # make sure that the author is not the bot itself
-        strIndex = message.content.find("https://twitter.com")
-        if strIndex != -1: # check for the twitter link somewhere in the message
-            if(message.embeds): # check that the message has an embed
-                if(message.embeds[0].video): # check that the embed has a video in it
-                    message.content.replace("https://twitter.com", "https://vxtwitter.com")
-                    linkTemp = message.content[strIndex:] # take off the front part of the message before the link 
-                    # take off the last part of the message after the link
-                    strIndex = linkTemp.find(" ")
-                    if(strIndex != -1):
-                        linkTemp = linkTemp[:strIndex]
-                    else:
-                        linkTemp = linkTemp
-                    # add vx to the twitter url and take off the space left at the end
-                    linkTemp = linkTemp[:8] + "vx" + linkTemp[8:]
-                    await message.reply(content = linkTemp, silent = True) # send a silent message
-                    printLogMessage("Fixed a twitter link")
+    if(fixTwitter): # TODO: might be a more efficient way to do this than checking it every time
+        if message.author != bot.user: # make sure that the author is not the bot itself
+            strIndex = message.content.find("https://twitter.com")
+            if strIndex != -1: # check for the twitter link somewhere in the message
+                if(message.embeds): # check that the message has an embed
+                    if(message.embeds[0].video): # check that the embed has a video in it
+                        message.content.replace("https://twitter.com", "https://vxtwitter.com")
+                        linkTemp = message.content[strIndex:] # take off the front part of the message before the link 
+                        # take off the last part of the message after the link
+                        strIndex = linkTemp.find(" ")
+                        if(strIndex != -1):
+                            linkTemp = linkTemp[:strIndex]
+                        else:
+                            linkTemp = linkTemp
+                        # add vx to the twitter url and take off the space left at the end
+                        linkTemp = linkTemp[:8] + "vx" + linkTemp[8:]
+                        await message.reply(content = linkTemp, silent = True, mention_author=False) # send a silent message
+                        printLogMessage("Fixed a twitter link")
 
 # run bot
 bot.run(token)

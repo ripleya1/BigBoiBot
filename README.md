@@ -6,11 +6,13 @@ This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessRe
 ## Run it yourself
 For Big Boi Bot to run, you need to:
 - put the proper info into a configu.txt file in the same directory as the Python script file (sample file provided)
+    - Playing is the playing message that shows up on the bot's profile when it's running
+    - Fix twitter links is whether or not twitter links with videos get "fixed" by replacing the Twitter URL with a Vxtwitter URL, this is set to true by default
 - put your bot token in a token.txt file in the same directory as the Python script file
 - do likewise with the Google Maps API Key in a mapskey.txt file
 - create a reminders.json file with nothing inside of it except for a two closed brackets ([])
 - replace the directory variable on line 19 where Python reads the txt and json files with your own
-- note that dependencies are included in the requirements.txt file.
+- note that dependencies are included in the requirements.txt file
 
 ## Discord.py
 Made using [Discord.py](https://discordpy.readthedocs.io/en/latest/index.html). ([Github](https://github.com/Rapptz/discord.py))
