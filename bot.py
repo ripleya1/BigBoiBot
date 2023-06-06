@@ -40,7 +40,7 @@ with open(configPath, "r") as j:
     playing = (str(lines[0])[8:]).strip()
 
 # initialize variables
-botIntents = discord.Intents(messages = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
+botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
@@ -65,6 +65,8 @@ async def on_ready():
 # helper function for on_ready that checks the reminders json for any remaining reminders,
 # sends the reminder if the time for it has passed,
 # and waits to send the reminder until the time for it happens if it has not
+# note that if the bot is stopped and then restarted in quick succession and there are reminders in the json
+# on_ready will halt for a bit and this function will take longer to start running
 async def checkRemindersJson():
     # checking JSON for unsent reminders
     printLogMessage("Loading JSON data...")
@@ -142,13 +144,13 @@ async def info(interaction: discord.Interaction):
 async def ping(interaction: discord.Interaction):
     await interaction.response.send_message(str(interaction.user.mention) + " Pong!")
 
-# command that flips a coin
+# coinflip command
 @bot.tree.command(description="Flips a coin.")
 async def coinflip(interaction: discord.Interaction):
     result = ["Heads", "Tails"]
     await interaction.response.send_message(random.choice(result) + "!")
 
-# command that searches google
+# google command
 @bot.tree.command(description="Sends a Google search link.")
 @discord.app_commands.describe(search="What you want to search.")
 async def google(interaction: discord.Interaction, search: str):
@@ -393,30 +395,27 @@ def getAlerts(lat, lon, desc):
     embedString = embedString[:1023]
     return embedString
 
-# DEPRECATED
-# on message sent
-# @bot.event
-# async def on_message(ctx):
-#     #checking if the author is not the bot
-#     if ctx.author != bot.user:
-#         await bot.process_commands(ctx)
-#         #check for twitter link somewhere in message
-#         #replaces https://twitter.com with https://fxtwitter.com in a message
-#         if "https://twitter.com" in ctx.content:
-#             linkTemp = ctx.content
-#             #takes off the front part of the message before the link
-#             while linkTemp[:19] != "https://twitter.com":
-#                 linkTemp = linkTemp[1:]
-#             linkTemp2 = linkTemp
-#             c = 0
-#             #takes off the last part of the message after the link
-#             while not linkTemp[c : c + 1].isspace() and not c == len(linkTemp):
-#                 c += 1
-#             linkTemp = linkTemp[:c]
-#             #adds fx to the twitter url and takes off the space left at the end
-#             linkTemp = linkTemp[:8] + "fx" + linkTemp[8:]
-#             #sends modified link
-#             await ctx.channel.send(linkTemp)
+# on message sent, replaces https://twitter.com with https://vxtwitter.com in a message, if found
+# sends a silent message
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author != bot.user: # make sure that the author is not the bot itself
+        strIndex = message.content.find("https://twitter.com")
+        if strIndex != -1: # check for the twitter link somewhere in the message
+            if(message.embeds): # check that the message has an embed
+                if(message.embeds[0].video): # check that the embed has a video in it
+                    message.content.replace("https://twitter.com", "https://vxtwitter.com")
+                    linkTemp = message.content[strIndex:] # take off the front part of the message before the link 
+                    # take off the last part of the message after the link
+                    strIndex = linkTemp.find(" ")
+                    if(strIndex != -1):
+                        linkTemp = linkTemp[:strIndex]
+                    else:
+                        linkTemp = linkTemp
+                    # add vx to the twitter url and take off the space left at the end
+                    linkTemp = linkTemp[:8] + "vx" + linkTemp[8:]
+                    await message.reply(content = linkTemp, silent = True) # send a silent message
+                    printLogMessage("Fixed a twitter link")
 
 # run bot
 bot.run(token)
