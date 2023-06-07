@@ -1,2 +1,3 @@
 Playing=
 Fix twitter links=true
+Fix tiktok links=true

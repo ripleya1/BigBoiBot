@@ -39,6 +39,7 @@ with open(configPath, "r") as j:
     lines = j.readlines()
     playing = (str(lines[0])[8:]).strip()
     fixTwitter = (str(lines[1])[18:]).strip().lower()
+    fixTiktok = (str(lines[1])[17:]).strip().lower()
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
@@ -47,12 +48,20 @@ botVersion = 2.00
 embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
+
 if(fixTwitter == "t" or fixTwitter == "true" or fixTwitter == "1"):
     fixTwitter = True
 elif(fixTwitter == "f" or fixTwitter == "false" or fixTwitter == "0"):
     fixTwitter = False
 else:
     fixTwitter = True
+
+if(fixTiktok == "t" or fixTiktok == "true" or fixTiktok == "1"):
+    fixTiktok = True
+elif(fixTiktok == "f" or fixTiktok == "false" or fixTiktok == "0"):
+    fixTiktok = False
+else:
+    fixTiktok = True
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
@@ -406,27 +415,40 @@ def getAlerts(lat, lon, desc):
     return embedString
 
 # on message sent, replaces https://twitter.com with https://vxtwitter.com in a message, if found
-# sends a silent message
+# sends a silent message and removes the embed from the original message
 @bot.event
 async def on_message(message: discord.Message):
-    if(fixTwitter): # TODO: might be a more efficient way to do this than checking it every time
+    if(fixTwitter):
         if message.author != bot.user: # make sure that the author is not the bot itself
             strIndex = message.content.find("https://twitter.com")
             if strIndex != -1: # check for the twitter link somewhere in the message
+                await asyncio.sleep(1) # wait for the embed to render   # TODO: might need to make this longer
                 if(message.embeds): # check that the message has an embed
                     if(message.embeds[0].video): # check that the embed has a video in it
-                        message.content.replace("https://twitter.com", "https://vxtwitter.com")
-                        linkTemp = message.content[strIndex:] # take off the front part of the message before the link 
-                        # take off the last part of the message after the link
-                        strIndex = linkTemp.find(" ")
-                        if(strIndex != -1):
-                            linkTemp = linkTemp[:strIndex]
-                        else:
-                            linkTemp = linkTemp
-                        # add vx to the twitter url and take off the space left at the end
-                        linkTemp = linkTemp[:8] + "vx" + linkTemp[8:]
-                        await message.reply(content = linkTemp, silent = True, mention_author=False) # send a silent message
+                        await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
                         printLogMessage("Fixed a twitter link")
+                        
+    if(fixTiktok): 
+        if message.author != bot.user: # make sure that the author is not the bot itself
+            strIndex = message.content.find("https://www.tiktok.com")
+            if strIndex != -1: # check for the tiktok link somewhere in the message
+                await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndex)
+                printLogMessage("Fixed a tiktok link")
+
+# TODO: DOCUMENT
+# helper function for on_message 
+async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacementURL: str, strIndex: int):
+    # take off the front part of the message before the link    
+    linkTemp = message.content[strIndex:]
+    linkTemp = linkTemp.replace(oldURL, replacementURL)
+    # take off the last part of the message after the link
+    strIndex = linkTemp.find(" ")
+    if(strIndex != -1):
+        linkTemp = linkTemp[:strIndex]
+    else:
+        linkTemp = linkTemp
+    await message.reply(content = linkTemp, silent = True, mention_author = False) # send a silent message with the fixed link
+    await message.edit(suppress=True) # remove the embed of the previous message
 
 # run bot
 bot.run(token)
