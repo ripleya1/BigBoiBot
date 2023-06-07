@@ -100,7 +100,8 @@ async def checkRemindersJson():
             for x in reminderData:
                 if int(x['time']) < int(time.time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
                     channel = bot.get_channel(int(x["channel"]))
-                    await channel.send(str(x["author"]) + " " + str(x["reminder"]) + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
+                    await channel.send(str(x["author"]) + " " + str(x["reminder"])
+                                        + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
                     delete_JSON_Element(x)
                 elif int(x["time"]) > int(time.time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
                     waitBool = True
@@ -154,7 +155,11 @@ async def info(interaction: discord.Interaction):
     embed = discord.Embed(title="Bot info", color=embedColor)
     embed.add_field(name="Ping", value=str(int(bot.latency * 1000)) + " ms", inline=False)
     embed.add_field(name="Uptime", value=uptimeStr, inline=False)
-    embed.add_field(name="Version", value="Bot version: " + str(botVersion) + "\nDiscord.py version: " + str(discord.__version__) + " " + str(discord.version_info.releaselevel) + "\nPython version: " + str(version_info.major) + "." + str(version_info.minor) + "." + str(version_info.micro) + " " + str(version_info.releaselevel), inline=False)
+    embed.add_field(name="Version", 
+                    value="Bot version: " + str(botVersion) 
+                    + "\nDiscord.py version: " + str(discord.__version__) + " " + str(discord.version_info.releaselevel)
+                    + "\nPython version: " + str(version_info.major) + "." + str(version_info.minor) + "." + str(version_info.micro)
+                    + " " + str(version_info.releaselevel), inline=False)
     embed.add_field(name="View source code:", value="https://github.com/ripleya1/BigBoiBot", inline=False)
     await interaction.response.send_message(content=None, embed=embed)
 
@@ -331,7 +336,8 @@ def getHourly(lat, lon, len):
     for f in hourlyForecasts['properties']['periods']:
         # datetime object of the time of the object being iterated
         weatherTime = datetime.datetime.strptime(f['startTime'], "%Y-%m-%dT%H:%M:%S%z")
-        if currentTimeGMT.strftime("%I %p") == (datetime.datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")): # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
+         # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
+        if currentTimeGMT.strftime("%I %p") == (datetime.datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")):
             break
         else: # if it's not then add 1 to the index of hourly forecasts to use
             i += 1
@@ -414,7 +420,7 @@ def getAlerts(lat, lon, desc):
     embedString = embedString[:1023]
     return embedString
 
-# on message sent, replaces https://twitter.com with https://vxtwitter.com in a message, if found
+# on message sent, replaces https://twitter.com with https://vxtwitter.com in the message, if found
 # sends a silent message and removes the embed from the original message
 @bot.event
 async def on_message(message: discord.Message):
@@ -435,8 +441,8 @@ async def on_message(message: discord.Message):
                 await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndex)
                 printLogMessage("Fixed a tiktok link")
 
-# TODO: DOCUMENT
-# helper function for on_message 
+# helper function for on_message that extracts a URL from a message, replaces it with another URL, 
+# cuts off the rest of the message, and sends the extracted URL as a silent reply to the original
 async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacementURL: str, strIndex: int):
     # take off the front part of the message before the link    
     linkTemp = message.content[strIndex:]
