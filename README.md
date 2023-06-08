@@ -30,7 +30,10 @@ Using [this wrapper](https://github.com/googlemaps/google-maps-services-python).
 Uses [BetterTwitFix](https://github.com/dylanpdx/BetterTwitFix) to fix Twitter URLs.
 
 ## vxtiktok
-Uses [vxtiktok](https://github.com/dylanpdx/vxtiktok) to fix Twitter URLs.
+Uses [vxtiktok](https://github.com/dylanpdx/vxtiktok) to fix Tiktok URLs.
+
+# # InstaFix
+Uses [InstaFix](https://github.com/Wikidepia/InstaFix) to fix Instagram URLs.
 
 ## Roadmap
 - ✔ Migrate bot.py to v2.0 of discord.py. This includes converting all commands to be [slash commands](https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.app_commands.CommandTree.command).

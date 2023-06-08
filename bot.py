@@ -441,6 +441,13 @@ async def on_message(message: discord.Message):
                 await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndex)
                 printLogMessage("Fixed a tiktok link")
 
+    if(fixInsta):
+        if message.author != bot.user: # make sure that the author is not the bot itself
+            strIndex = message.content.find("https://www.instagram.com")
+            if strIndex != -1: # check for the tiktok link somewhere in the message
+                await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndex)
+                printLogMessage("Fixed an instagram link")
+
 # helper function for on_message that extracts a URL from a message, replaces it with another URL, 
 # cuts off the rest of the message, and sends the extracted URL as a silent reply to the original
 async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacementURL: str, strIndex: int):
