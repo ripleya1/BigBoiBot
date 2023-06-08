@@ -38,8 +38,9 @@ with open(mapsKeyPath, "r") as j:
 with open(configPath, "r") as j:
     lines = j.readlines()
     playing = (str(lines[0])[8:]).strip()
-    fixTwitter = (str(lines[1])[18:]).strip().lower()
-    fixTiktok = (str(lines[1])[17:]).strip().lower()
+    fixTwitterStr = (str(lines[1])[18:]).strip().lower()
+    fixTiktokStr = (str(lines[2])[17:]).strip().lower()
+    fixInstaStr = (str(lines[3])[20:]).strip().lower()
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
@@ -49,19 +50,20 @@ embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
 
-if(fixTwitter == "t" or fixTwitter == "true" or fixTwitter == "1"):
-    fixTwitter = True
-elif(fixTwitter == "f" or fixTwitter == "false" or fixTwitter == "0"):
-    fixTwitter = False
-else:
-    fixTwitter = True
+# helper function to set the bool variables that indicate 
+# whether or not to fix links from each site 
+# given data from the config file
+def checkFixingBool(fixStr: str):
+    if(fixStr == "t" or fixStr == "true" or fixStr == "1"):
+        return True
+    elif(fixStr == "f" or fixStr == "false" or fixStr == "0"):
+        return False
+    else:
+        return True
 
-if(fixTiktok == "t" or fixTiktok == "true" or fixTiktok == "1"):
-    fixTiktok = True
-elif(fixTiktok == "f" or fixTiktok == "false" or fixTiktok == "0"):
-    fixTiktok = False
-else:
-    fixTiktok = True
+fixTwitter = checkFixingBool(fixTwitterStr)
+fixTiktok = checkFixingBool(fixTiktokStr)
+fixInsta = checkFixingBool(fixInstaStr)
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
