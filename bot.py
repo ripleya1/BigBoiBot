@@ -80,6 +80,10 @@ async def on_ready():
     printLogMessage("Bot live!")
     if(fixTwitter):
         printLogMessage("Fixing twitter video links")
+    if(fixTiktok):
+        printLogMessage("Fixing tiktok video links")
+    if(fixInsta):
+        printLogMessage("Fixing instagram video links")
 
     await checkRemindersJson()
 
