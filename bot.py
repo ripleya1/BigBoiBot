@@ -85,7 +85,12 @@ async def on_ready():
     if(fixInsta):
         printLogMessage("Fixing instagram video links")
 
-    await checkRemindersJson()
+    try:
+        await checkRemindersJson()
+    except IOError: # if the file isn't there don't bother checking it and make one instead
+        open("reminders.json", "x")
+        printLogMessage("Created new reminders.json file")
+        printLogMessage("No JSON data to load")
 
 # helper function for on_ready that checks the reminders json for any remaining reminders,
 # sends the reminder if the time for it has passed,

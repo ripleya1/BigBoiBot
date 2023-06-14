@@ -11,8 +11,8 @@ For Big Boi Bot to run, you need to:
     - Fix tiktok links is whether or not tiktok links get "fixed" by replacing the Tiktok URL with a vxtiktok URL, this is set to true by default
 - put your bot token in a token.txt file in the same directory as the Python script file
 - do likewise with the Google Maps API Key in a mapskey.txt file
-- create a reminders.json file with nothing inside of it except for a two closed brackets ([])
 - replace the directory variable on line 19 where Python reads the txt and json files with your own
+- note that a reminders.json file will be created for you in the directory on the first run of the bot 
 - note that dependencies are included in the requirements.txt file
 
 ## Discord.py
@@ -43,6 +43,5 @@ Uses [InstaFix](https://github.com/Wikidepia/InstaFix) to fix Instagram URLs.
     - ~~New functionality: Messages can be edited~~ iff the tweet contains a video
     - ~~If detecting if the tweet contains a video is not feasible, edit all messages containing a tweet link.~~
     - If editing messages of other users is not feasible, send a message, similar to the previous implementation. Make this a [reply](https://discordpy.readthedocs.io/en/latest/api.html#discord.MessageType.reply).
-- ❌ Add logic that checks if a reminders.json file is in the directory and if not creates one.
 - ❌ Add functionality for the [OWL API](https://develop.battle.net/documentation/owl/community-apis). 
     - If someone makes a Python wrapper for it before I get to it I'll probably use that.
