@@ -43,7 +43,7 @@ with open(configPath, "r") as j:
     fixInstaStr = (str(lines[3])[20:]).strip().lower()
 
 # initialize variables
-botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/latest/api.html#discord.Intents
+botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.00
 embedColor = 0x71368a
@@ -70,6 +70,7 @@ noaaClient = noaa.NOAA()
 mapsClient = googlemaps.Client(key=mapsKey)
 
 # runs on bot ready
+# https://discordpy.readthedocs.io/en/stable/api.html#discord.on_ready
 @bot.event
 async def on_ready():
     starttime = datetime.datetime.now()
@@ -431,29 +432,29 @@ def getAlerts(lat, lon, desc):
     embedString = embedString[:1023]
     return embedString
 
-# on message sent, replaces https://twitter.com with https://vxtwitter.com in the message, if found
+# on message sent, replaces https://twitter.com, https://www.tiktok.com, and https://www.instagram.com 
+# with https://vxtwitter.com, https://www.vxtiktok.com, and https://www.ddinstagram.com respecively in the message, if found
 # sends a silent message and removes the embed from the original message
+# https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message
 @bot.event
 async def on_message(message: discord.Message):
-    if(fixTwitter):
-        if message.author != bot.user: # make sure that the author is not the bot itself
+    if message.author != bot.user: # make sure that the author is not the bot itself
+        if(fixTwitter):
             strIndex = message.content.find("https://twitter.com")
             if strIndex != -1: # check for the twitter link somewhere in the message
-                await asyncio.sleep(1) # wait for the embed to render   # TODO: might need to make this longer
+                await asyncio.sleep(1) # wait for the embed to render
                 if(message.embeds): # check that the message has an embed
                     if(message.embeds[0].video): # check that the embed has a video in it
                         await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
                         printLogMessage("Fixed a twitter link")
-                        
-    if(fixTiktok): 
-        if message.author != bot.user: # make sure that the author is not the bot itself
+                            
+        if(fixTiktok): 
             strIndex = message.content.find("https://www.tiktok.com")
             if strIndex != -1: # check for the tiktok link somewhere in the message
                 await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndex)
                 printLogMessage("Fixed a tiktok link")
 
-    if(fixInsta):
-        if message.author != bot.user: # make sure that the author is not the bot itself
+        if(fixInsta):
             strIndex = message.content.find("https://www.instagram.com")
             if strIndex != -1: # check for the tiktok link somewhere in the message
                 await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndex)
