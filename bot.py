@@ -446,8 +446,13 @@ async def on_message(message: discord.Message):
                 # await asyncio.sleep(1) # wait for the embed to render
                 # if(message.embeds): # check that the message has an embed
                 #     if(message.embeds[0].video): # check that the embed has a video in it
-                await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
+                newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
                 printLogMessage("Fixed a twitter link")
+                # if vxtwitter fails delete the message with the fixed link
+                await asyncio.sleep(1) # wait for the embed to render
+                if("Failed to scan your link!" in newMsg.embeds[0].description):
+                    await newMsg.delete()
+                    printLogMessage("Vxtwitter failed. Deleted message.")
                             
         if(fixTiktok): 
             strIndex = message.content.find("https://www.tiktok.com")
@@ -473,8 +478,9 @@ async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacemen
         linkTemp = linkTemp[:strIndex]
     else:
         linkTemp = linkTemp
-    await message.reply(content = linkTemp, silent = True, mention_author = False) # send a silent message with the fixed link
+    newMsg = await message.reply(content = linkTemp, silent = True, mention_author = False) # send a silent message with the fixed link
     await message.edit(suppress=True) # remove the embed of the previous message
+    return newMsg
 
 # run bot
 bot.run(token)
