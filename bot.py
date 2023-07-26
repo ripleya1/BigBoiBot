@@ -442,14 +442,16 @@ async def on_message(message: discord.Message):
         if(fixTwitter):
             strIndex = message.content.find("https://twitter.com")
             if strIndex != -1: # check for the twitter link somewhere in the message
-                # since all twitter embeds are broken on discord now, fix all twitter links
-                # await asyncio.sleep(1) # wait for the embed to render
-                # if(message.embeds): # check that the message has an embed
-                #     if(message.embeds[0].video): # check that the embed has a video in it
-                newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
-                printLogMessage("Fixed a twitter link")
-                # if vxtwitter fails delete the message with the fixed link
                 await asyncio.sleep(1) # wait for the embed to render
+                if(message.embeds): # check that the message has an embed
+                    if(message.embeds[0].video): # check that the embed has a video in it
+                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
+                        printLogMessage("Fixed a twitter link")
+                else: # if the embed fails to render, fix the link
+                    newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
+                    printLogMessage("Fixed a twitter link")
+                # if vxtwitter fails delete the message with the fixed link
+                await asyncio.sleep(2) # wait for the embed to render
                 if("Failed to scan your link!" in newMsg.embeds[0].description):
                     await newMsg.delete()
                     printLogMessage("Vxtwitter failed. Deleted message.")
