@@ -432,40 +432,41 @@ def getAlerts(lat, lon, desc):
     embedString = embedString[:1023]
     return embedString
 
-# on message sent, replaces https://twitter.com, https://www.tiktok.com, and https://www.instagram.com 
-# with https://vxtwitter.com, https://www.vxtiktok.com, and https://www.ddinstagram.com respecively in the message, if found
+# on message sent, replaces https://twitter.com, https://x.com, https://www.tiktok.com, and https://www.instagram.com 
+# with https://vxtwitter.com, https://www.vxtiktok.com, and https://www.ddinstagram.com, respectively in the message, if found
 # sends a silent message and removes the embed from the original message
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message
 @bot.event
 async def on_message(message: discord.Message):
     if message.author != bot.user: # make sure that the author is not the bot itself
         if(fixTwitter):
-            strIndex = message.content.find("https://twitter.com")
-            if strIndex != -1: # check for the twitter link somewhere in the message
+            strIndexTwt = message.content.find("https://twitter.com")
+            strIndexX = message.content.find("https://x.com")
+            if strIndexTwt != -1 or strIndexX != -1: # check for the twitter link somewhere in the message, note that we're assuming there is an x link OR twitter link not both
                 await asyncio.sleep(1) # wait for the embed to render
-                if(message.embeds): # check that the message has an embed
-                    if(message.embeds[0].video): # check that the embed has a video in it
-                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
+                if((message.embeds and message.embeds[0].video) or not message.embeds): # check that the message has an embed and the embed has a video in it or the embed fails to render
+                    if strIndexTwt != -1: # twitter.com case
+                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndexTwt)
                         printLogMessage("Fixed a twitter link")
-                else: # if the embed fails to render, fix the link
-                    newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndex)
-                    printLogMessage("Fixed a twitter link")
+                    elif strIndexX != -1: # x.com case
+                        newMsg = await extractAndReplaceURL(message, "https://x.com", "https://vxtwitter.com", strIndexX)
+                        printLogMessage("Fixed an X link")
                 # if vxtwitter fails delete the message with the fixed link
-                await asyncio.sleep(2) # wait for the embed to render
-                if("Failed to scan your link!" in newMsg.embeds[0].description):
+                await asyncio.sleep(5) # wait for the embed to render
+                if((len(newMsg.embeds) == 0) or ("Failed to scan your link!" in newMsg.embeds[0].description)): # check if the embed does not exist or vxtwitter gives failed to scan message
                     await newMsg.delete()
                     printLogMessage("Vxtwitter failed. Deleted message.")
                             
         if(fixTiktok): 
-            strIndex = message.content.find("https://www.tiktok.com")
-            if strIndex != -1: # check for the tiktok link somewhere in the message
-                await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndex)
+            strIndexTT = message.content.find("https://www.tiktok.com")
+            if strIndexTT != -1: # check for the tiktok link somewhere in the message
+                await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndexTT)
                 printLogMessage("Fixed a tiktok link")
 
         if(fixInsta):
-            strIndex = message.content.find("https://www.instagram.com")
-            if strIndex != -1: # check for the tiktok link somewhere in the message
-                await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndex)
+            strIndexInsta = message.content.find("https://www.instagram.com")
+            if strIndexInsta != -1: # check for the tiktok link somewhere in the message
+                await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndexInsta)
                 printLogMessage("Fixed an instagram link")
 
 # helper function for on_message that extracts a URL from a message, replaces it with another URL, 
