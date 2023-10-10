@@ -44,5 +44,3 @@ Uses [InstaFix](https://github.com/Wikidepia/InstaFix) to fix Instagram URLs.
     - ~~New functionality: Messages can be edited~~ iff the tweet contains a video
     - ~~If detecting if the tweet contains a video is not feasible, edit all messages containing a tweet link.~~
     - If editing messages of other users is not feasible, send a message, similar to the previous implementation. Make this a [reply](https://discordpy.readthedocs.io/en/latest/api.html#discord.MessageType.reply).
-- ❌ Add functionality for the [OWL API](https://develop.battle.net/documentation/owl/community-apis). 
-    - If someone makes a Python wrapper for it before I get to it I'll probably use that.
