@@ -444,7 +444,7 @@ async def on_message(message: discord.Message):
             strIndexX = message.content.find("https://x.com")
             if strIndexTwt != -1 or strIndexX != -1: # check for the twitter link somewhere in the message, note that we're assuming there is an x link OR twitter link not both
                 await asyncio.sleep(1) # wait for the embed to render
-                if((message.embeds and message.embeds[0].video) or not message.embeds): # check that the message has an embed and the embed has a video in it or the embed fails to render
+                if((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds): # check that the message has an embed and the embed has a video in it or the embed fails to render
                     if strIndexTwt != -1: # twitter.com case
                         newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndexTwt)
                         printLogMessage("Fixed a twitter link")
