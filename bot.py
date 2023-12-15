@@ -45,7 +45,7 @@ with open(configPath, "r") as j:
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
-botVersion = 2.00
+botVersion = 2.02
 embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
@@ -453,7 +453,7 @@ async def on_message(message: discord.Message):
                         printLogMessage("Fixed an X link")
                 # if vxtwitter fails delete the message with the fixed link
                 await asyncio.sleep(5) # wait for the embed to render
-                if((len(newMsg.embeds) == 0) or ("Failed to scan your link!" in newMsg.embeds[0].description)): # check if the embed does not exist or vxtwitter gives failed to scan message
+                if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
                     await newMsg.delete()
                     printLogMessage("Vxtwitter failed. Deleted message.")
                             
