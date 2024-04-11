@@ -451,19 +451,20 @@ async def on_message(message: discord.Message):
             strIndexTwt = message.content.find("https://twitter.com")
             strIndexX = message.content.find("https://x.com")
             if strIndexTwt != -1 or strIndexX != -1: # check for the twitter link somewhere in the message, note that we're assuming there is an x link OR twitter link not both
-                await asyncio.sleep(1) # wait for the embed to render
-                if((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds): # check that the message has an embed and the embed has a video in it or the embed fails to render
+                if(not fixAllTwitter):    
+                    await asyncio.sleep(1) # wait for the embed to render
+                if(fixAllTwitter or (not fixAllTwitter and ((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds))): # if fixAllTwitter is false check that the message has an embed and the embed has a video in it or the embed fails to render
                     if strIndexTwt != -1: # twitter.com case
                         newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndexTwt)
                         printLogMessage("Fixed a twitter link")
                     elif strIndexX != -1: # x.com case
                         newMsg = await extractAndReplaceURL(message, "https://x.com", "https://vxtwitter.com", strIndexX)
                         printLogMessage("Fixed an X link")
-                # if vxtwitter fails delete the message with the fixed link
-                await asyncio.sleep(5) # wait for the embed to render
-                if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
-                    await newMsg.delete()
-                    printLogMessage("Vxtwitter failed. Deleted message.")
+                    # if vxtwitter fails, delete the message with the fixed link
+                    await asyncio.sleep(5) # wait for the embed to render
+                    if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
+                        await newMsg.delete()
+                        printLogMessage("Vxtwitter failed. Deleted message.")
                             
         if(fixTiktok): 
             strIndexTT = message.content.find("https://www.tiktok.com")
