@@ -34,13 +34,17 @@ with open(tokenPath, "r") as f:
 with open(mapsKeyPath, "r") as j:
     mapsKey = j.readlines()[0]
 
+def readConfigLines(lines: list[str], lineNum: int):
+    return str(lines[lineNum].rsplit("=")[1]).strip()
+
 # read from config file
 with open(configPath, "r") as j:
     lines = j.readlines()
-    playing = (str(lines[0])[8:]).strip()
-    fixTwitterStr = (str(lines[1])[18:]).strip().lower()
-    fixTiktokStr = (str(lines[2])[17:]).strip().lower()
-    fixInstaStr = (str(lines[3])[20:]).strip().lower()
+    playing = readConfigLines(lines, 0)
+    fixTwitterStr = readConfigLines(lines, 1)
+    fixTiktokStr = readConfigLines(lines, 2)
+    fixInstaStr = readConfigLines(lines, 3)
+    fixAllTwitterStr = readConfigLines(lines, 4)
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
@@ -53,7 +57,8 @@ game = discord.Game(playing)
 # helper function to set the bool variables that indicate 
 # whether or not to fix links from each site 
 # given data from the config file
-def checkFixingBool(fixStr: str):
+def checkFixBool(fixStr: str):
+    fixStr = fixStr.lower()
     if(fixStr == "t" or fixStr == "true" or fixStr == "1"):
         return True
     elif(fixStr == "f" or fixStr == "false" or fixStr == "0"):
@@ -61,9 +66,10 @@ def checkFixingBool(fixStr: str):
     else:
         return True
 
-fixTwitter = checkFixingBool(fixTwitterStr)
-fixTiktok = checkFixingBool(fixTiktokStr)
-fixInsta = checkFixingBool(fixInstaStr)
+fixTwitter = checkFixBool(fixTwitterStr)
+fixTiktok = checkFixBool(fixTiktokStr)
+fixInsta = checkFixBool(fixInstaStr)
+fixAllTwitter = checkFixBool(fixAllTwitterStr)
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
@@ -80,11 +86,13 @@ async def on_ready():
     printLogMessage("Synced " + str(len(syncedCommands)) + " slash commands")
     printLogMessage("Bot live!")
     if(fixTwitter):
-        printLogMessage("Fixing twitter video links")
+        printLogMessage("Fixing twitter links")
     if(fixTiktok):
         printLogMessage("Fixing tiktok video links")
     if(fixInsta):
         printLogMessage("Fixing instagram video links")
+    if(fixAllTwitter):
+        printLogMessage("Fixing all twitter links")
 
     try:
         await checkRemindersJson()

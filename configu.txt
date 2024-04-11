@@ -1,4 +1,5 @@
 Playing=
-Fix twitter links=true
-Fix tiktok links=true
-Fix instagram links=true
+Fix twitter links=1
+Fix tiktok links=1
+Fix instagram links=1
+Fix all twitter links=1

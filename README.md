@@ -6,12 +6,13 @@ This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessRe
 
 ## Run it yourself
 For Big Boi Bot to run, you need to:
-- Put the proper info into a [`configu.txt`](configu.txt) file in the same directory as the Python script file.
+- Put the proper info into a [`configu.txt`](configu.txt) file, which is in the same directory as the Python script file:
     - Playing: The playing message that shows up on the bot's profile when it's running. Set to "" by default.
-    - Fix twitter links: Whether or not twitter links with videos get "fixed" by replacing the Twitter/X URL with a [BetterTwitFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#bettertwitfix) URL. Set to true by default.
-    - Fix tiktok links: Whether or not tiktok links get "fixed" by replacing the Tiktok URL with a [vxtiktok](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#vxtiktok) URL. Set to true by default.
-    - Fix instagram links: Whether or not Instagram links get "fixed" by replacing the Instagram URL with an [InstaFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#instafix) URL. Set to true by default.
-- Put your bot token in a `token.txt` file in the same directory as the Python script file.
+    - Fix twitter links: Whether or not twitter links get "fixed" by replacing the Twitter/X URL with a [BetterTwitFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#bettertwitfix) URL. Set to 1 by default.
+    - Fix tiktok links: Whether or not tiktok links get "fixed" by replacing the Tiktok URL with a [vxtiktok](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#vxtiktok) URL. Set to 1 by default.
+    - Fix instagram links: Whether or not Instagram links get "fixed" by replacing the Instagram URL with an [InstaFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#instafix) URL. Set to 1 by default.
+    - Fix all twitter links: Whether all twitter links get "fixed" (1) or just the ones without embeds or with videos (0). If fix twitter links is set to 0, the value of this does not matter. Set to 1 by default.
+- Put your bot token in a `token.txt` file, which is in the same directory as the Python script file.
     - Do likewise with the Google Maps API Key in a `mapskey.txt` file.
 - Optional: Replace the directory variable on [line 23](https://github.com/ripleya1/BigBoiBot/blob/main/bot.py#L23) where Python reads the .txt and .json files with your own.
     - This should not be necessary in most cases, but if Python for some reason is not reading your files, this is a good place to start troubleshooting.
