@@ -34,8 +34,9 @@ with open(tokenPath, "r") as f:
 with open(mapsKeyPath, "r") as j:
     mapsKey = j.readlines()[0]
 
+# helper function to return the contents of a given line from the lines of the config file
 def readConfigLines(lines: list[str], lineNum: int):
-    return str(lines[lineNum].rsplit("=")[1]).strip()
+    return str(lines[lineNum].rsplit("=")[1]).strip() # return everything after the last = in the line
 
 # read from config file
 with open(configPath, "r") as j:
@@ -49,7 +50,7 @@ with open(configPath, "r") as j:
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
-botVersion = 2.02
+botVersion = 2.10
 embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
@@ -462,9 +463,10 @@ async def on_message(message: discord.Message):
                         printLogMessage("Fixed an X link")
                     # if vxtwitter fails, delete the message with the fixed link
                     await asyncio.sleep(5) # wait for the embed to render
-                    if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
-                        await newMsg.delete()
-                        printLogMessage("Vxtwitter failed. Deleted message.")
+                    if(newMsg.embeds[0] is not None): # make sure that the message embed exists
+                        if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
+                            await newMsg.delete()
+                            printLogMessage("Vxtwitter failed. Deleted message.")
                             
         if(fixTiktok): 
             strIndexTT = message.content.find("https://www.tiktok.com")
