@@ -278,6 +278,11 @@ def delete_JSON_Element(element):
 def sortKey(x):
     return x["time"]
 
+# helper function to shorten the embed string
+# the embed string needs to be less than 1024 characters because of a limitation with the Discord API
+def shortenEmbedString(embedString):
+    return embedString[:1023]
+
 # command that gives the weather
 @bot.tree.command(description="Checks the weather. By default, a forecast summary is sent if no forecasttype is selected.")
 @discord.app_commands.choices(forecasttype = [
@@ -312,29 +317,25 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             embed.add_field(name="Next 3 days:", value=embedString, inline=False)
             # alerts
             embedString = getAlerts(lat, lon, False)
-            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-            embedString = embedString[:1023]
+            embedString = shortenEmbedString(embedString)
             embed.add_field(name="Alerts:", value=embedString, inline=False)
 
         elif(forecasttype == "h"):
             embed = discord.Embed(title="Hourly forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getHourly(lat, lon, 13)
-            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-            embedString = embedString[:1023]
+            embedString = shortenEmbedString(embedString)
             embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
 
         elif(forecasttype == "d"):
             embed = discord.Embed(title="Daily forecast for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getDaily(lat, lon, 15)
-            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-            embedString = embedString[:1023]
+            embedString = shortenEmbedString(embedString)
             embed.add_field(name="Next 7 days:", value=embedString, inline=False)
 
         elif(forecasttype == "a"):
             embed = discord.Embed(title="Alerts for " + location + ":", description="Weather provided by [the National Weather Service](https://www.weather.gov/).", color=weatherEmbedColor)
             embedString = getAlerts(lat, lon, True)
-            # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-            embedString = embedString[:1023]
+            embedString = shortenEmbedString(embedString)
             embed.add_field(name="Alerts:", value=embedString, inline=False)
         
         embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
@@ -374,8 +375,7 @@ def getHourly(lat, lon, len):
         t = datetime.datetime.strptime((f['startTime']), "%Y-%m-%dT%H:%M:%S%z").strftime("%I:%M %p")
         embedString += (t + " - " + str(f['temperature']) + "°" + f['temperatureUnit'] + ", " + f['shortForecast'] + "\n")
 
-    # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-    embedString = embedString[:1023]
+    embedString = shortenEmbedString(embedString)
     return embedString
 
 # helper function for weather command that returns a string for the daily forecast
@@ -400,8 +400,7 @@ def getDaily(lat, lon, len):
     for f in dailyForecasts:
         embedString += (f['name'] + " - " + f['detailedForecast'] + "\n")
 
-    # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-    embedString = embedString[:1023]
+    embedString = shortenEmbedString(embedString)
     return embedString
 
 # helper function for weather that returns a string for alerts
@@ -440,8 +439,7 @@ def getAlerts(lat, lon, desc):
         if(activeAlerts):
             embedString += ("Check your NWS website or local media for more information on these alerts.")
 
-    # embed string needs to be less than 1024 characters because of a limitation with the Discord API
-    embedString = embedString[:1023]
+    embedString = shortenEmbedString(embedString)
     return embedString
 
 # on message sent, replaces https://twitter.com, https://x.com, https://www.tiktok.com, and https://www.instagram.com 
