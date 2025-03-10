@@ -8,10 +8,11 @@ This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessRe
 For Big Boi Bot to run, you need to:
 - Put the proper info into a [`configu.txt`](configu.txt) file, which is in the same directory as the Python script file:
     - Playing: The playing message that shows up on the bot's profile when it's running. Set to "" by default.
-    - Fix twitter links: Whether or not twitter links get "fixed" by replacing the Twitter/X URL with a [BetterTwitFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#bettertwitfix) URL. Set to 1 by default.
+    - Fix twitter links: Whether or not twitter links get "fixed" by replacing the Twitter/X URL with a [BetterTwitFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#bettertwitfix) URL (by default, can be configured using the Twitter fix url config option). Set to 1 by default.
     - Fix tiktok links: Whether or not tiktok links get "fixed" by replacing the Tiktok URL with a [vxtiktok](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#vxtiktok) URL. Set to 1 by default.
     - Fix instagram links: Whether or not Instagram links get "fixed" by replacing the Instagram URL with an [InstaFix](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#instafix) URL. Set to 1 by default.
-    - Fix all twitter links: Whether all twitter links get "fixed" (1) or just the ones without embeds or with videos (0). If fix twitter links is set to 0, the value of this does not matter. Set to 1 by default.
+    - Fix all twitter links: Whether all twitter links get "fixed" (1) or just the ones without embeds or with videos (0). If fix twitter links is set to 0, this does nothing. Set to 1 by default.
+    - Twitter fix url: What `twitter` is replaced with in the Twitter url. If fix twitter links is set to 0, this does nothing. Set to `vxtwitter` by default. 
 - Put your bot token in a `token.txt` file, which is in the same directory as the Python script file.
     - Do likewise with the Google Maps API Key in a `mapskey.txt` file.
 - Optional: Replace the directory variable on [line 23](https://github.com/ripleya1/BigBoiBot/blob/main/bot.py#L23) where Python reads the .txt and .json files with your own.

@@ -46,11 +46,12 @@ with open(configPath, "r") as j:
     fixTiktokStr = readConfigLines(lines, 2)
     fixInstaStr = readConfigLines(lines, 3)
     fixAllTwitterStr = readConfigLines(lines, 4)
+    fixTwitterUrlStr = readConfigLines(lines, 5)
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
-botVersion = 2.10
+botVersion = 2.20
 embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
@@ -92,8 +93,10 @@ async def on_ready():
         printLogMessage("Fixing tiktok video links")
     if(fixInsta):
         printLogMessage("Fixing instagram video links")
-    if(fixAllTwitter):
+    if(fixAllTwitter and fixTwitter):
         printLogMessage("Fixing all twitter links")
+    if(fixTwitterUrlStr and fixTwitter):
+        printLogMessage("Fixing twitter links using " + fixTwitterUrlStr)
 
     try:
         await checkRemindersJson()
@@ -442,8 +445,8 @@ def getAlerts(lat, lon, desc):
     return embedString
 
 # on message sent, replaces https://twitter.com, https://x.com, https://www.tiktok.com, and https://www.instagram.com 
-# with https://vxtwitter.com, https://www.vxtiktok.com, and https://www.ddinstagram.com, respectively in the message, if found
-# sends a silent message and removes the embed from the original message
+# with https://vxtwitter.com (or whatever is in the config file), https://www.vxtiktok.com, and https://www.ddinstagram.com, 
+# respectively in the message, if found sends a silent message and removes the embed from the original message
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_message
 @bot.event
 async def on_message(message: discord.Message):
@@ -455,18 +458,20 @@ async def on_message(message: discord.Message):
                 if(not fixAllTwitter):    
                     await asyncio.sleep(1) # wait for the embed to render
                 if(fixAllTwitter or (not fixAllTwitter and ((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds))): # if fixAllTwitter is false check that the message has an embed and the embed has a video in it or the embed fails to render
+                    tempUrl = "https://" + fixTwitterUrlStr + ".com"
                     if strIndexTwt != -1: # twitter.com case
-                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", "https://vxtwitter.com", strIndexTwt)
+                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", tempUrl, strIndexTwt)
                         printLogMessage("Fixed a twitter link")
                     elif strIndexX != -1: # x.com case
-                        newMsg = await extractAndReplaceURL(message, "https://x.com", "https://vxtwitter.com", strIndexX)
+                        newMsg = await extractAndReplaceURL(message, "https://x.com", tempUrl, strIndexX)
                         printLogMessage("Fixed an X link")
-                    # if vxtwitter fails, delete the message with the fixed link
+                    # if twitter fix fails, delete the message with the fixed link
                     await asyncio.sleep(5) # wait for the embed to render
-                    if(newMsg.embeds[0] is not None): # make sure that the message embed exists
-                        if("Failed to scan your link!" in newMsg.embeds[0].description): # check if vxtwitter gives failure message
+                    if(newMsg.embeds[0]): # make sure that the message embed exists
+                        errorMessages = ["Failed to scan your link!", "Sorry, that post doesn't exist :("]
+                        if(any(sub in newMsg.embeds[0].description for sub in errorMessages)): # check if twitter fix gives failure message
                             await newMsg.delete()
-                            printLogMessage("Vxtwitter failed. Deleted message.")
+                            printLogMessage(fixTwitterUrlStr + " failed. Deleted message.")
                             
         if(fixTiktok): 
             strIndexTT = message.content.find("https://www.tiktok.com")
