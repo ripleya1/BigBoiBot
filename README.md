@@ -2,7 +2,7 @@
 Just a fun lil bot. Features include - sending reminders (which are backed up in a JSON file), sending the weather (in the US), "fixing" Twitter, Tiktok, and Instagram links to show embeds, and other dumb stuff.
 
 ### A Note
-This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessReaper/BigBoiBot), and is largely a rewrite. For posterity, the [Roadmap section](https://github.com/ripleya1/BigBoiBot/blob/main/README.md#v2-roadmap) includes some of the changes I planned to make.
+This is a v2 update to [the original BigBoiBot](https://github.com/TheGrimlessReaper/BigBoiBot), and is largely a rewrite.
 
 ## Run it yourself
 For Big Boi Bot to run, you need to:
@@ -42,11 +42,9 @@ Uses [vxtiktok](https://github.com/dylanpdx/vxtiktok) to fix Tiktok URLs.
 ### InstaFix
 Uses [InstaFix](https://github.com/Wikidepia/InstaFix) to fix Instagram URLs.
 
-## v2 Roadmap
-- ✔ Migrate bot.py to v2.0 of discord.py. This includes converting all commands to be [slash commands](https://discordpy.readthedocs.io/en/latest/interactions/api.html#discord.app_commands.CommandTree.command).
-- ✔ Add better logging to bot.py.
-- ✔ Update dependencies.
-- ✔ Update vxtwitter functionality.
-    - ~~New functionality: Messages can be edited~~ iff the tweet contains a video
-    - ~~If detecting if the tweet contains a video is not feasible, edit all messages containing a tweet link.~~
-    - If editing messages of other users is not feasible, send a message, similar to the previous implementation. Make this a [reply](https://discordpy.readthedocs.io/en/latest/api.html#discord.MessageType.reply).
+## Roadmap
+- [ ] Make URL replacements fully modular
+- [ ] Make the project more Pythonic/modularized (ie make it so the script isn't just one file), and clean up a bit
+- [ ] Replace Google Maps API with a new API since they're trying to charge me now ([OpenStreetMap](https://github.com/mocnik-science/osm-python-tools)?)
+- [ ] Check perms on Discord dev website
+- [ ] Bug Fix: Retry deleting embed if list index out of range
