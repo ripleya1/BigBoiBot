@@ -46,6 +46,7 @@ with open(configPath, "r") as j:
         lineNum += 1
 
 # initialize variables
+# TODO: update bot intents
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.50
@@ -55,6 +56,7 @@ game = discord.Game(playing)
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
+nominatim = Nominatim()
 
 # runs on bot ready
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_ready
@@ -315,8 +317,7 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
 # returns nothing if invalid location
 def search(searchStr):
     # searches for the location's coordinates using the OSM api
-    nominatim = Nominatim()
-    location = Nominatim().query(searchStr)
+    location = nominatim.query(searchStr)
     locationObj = location.toJSON()[0]
     locArray = [locationObj['lat'], locationObj['lon']]
     return locArray
@@ -443,7 +444,7 @@ async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacemen
     else:
         linkTemp = linkTemp
     newMsg = await message.reply(content = linkTemp, silent = True, mention_author = False) # send a silent message with the fixed link
-    await asyncio.sleep(1) # wait for the embed to render
+    await asyncio.sleep(1) # wait for the embed to load
     await message.edit(suppress=True) # remove the embed of the previous message
     return newMsg
 
