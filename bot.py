@@ -8,8 +8,8 @@ import random
 import json
 from os import path
 from sys import version_info
-import googlemaps
 from noaa_sdk import noaa
+from OSMPythonTools.nominatim import Nominatim
 
 # helper function that prints a formatted message with the current time given a string
 def printLogMessage(message: str):
@@ -24,15 +24,10 @@ directory = "" # modify as needed
 jsonPath = directory + "reminders.json"
 tokenPath = directory + "token.txt"
 configPath = directory + "configu.txt"
-mapsKeyPath = directory + "mapskey.txt"
 
 # read bot token
 with open(tokenPath, "r") as f:
     token = f.readlines()[0]
-
-# read Google Maps key
-with open(mapsKeyPath, "r") as j:
-    mapsKey = j.readlines()[0]
 
 # helper function to return the contents of a given line from the lines of the config file
 def readConfigLines(lines: list[str], lineNum: int):
@@ -75,7 +70,6 @@ fixAllTwitter = checkFixBool(fixAllTwitterStr)
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
-mapsClient = googlemaps.Client(key=mapsKey)
 
 # runs on bot ready
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_ready
@@ -341,14 +335,14 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
         embed.add_field(name="More weather information:", value="Visit [weather.gov](https://forecast.weather.gov/MapClick.php?lat=" + str(lat) + "&lon=" + str(lon) + ").", inline=False)
         await interaction.response.send_message(content=None, embed=embed)
 
-# helper function for weather command that searches for latitude and longitude of the searched location using the Google Maps API
+# helper function for weather command that searches for latitude and longitude of the searched location using the OpenStreetMap API
 # returns nothing if invalid location
 def search(searchStr):
-    # searches for the location's coordinates using the google maps api
-    geo = mapsClient.geocode(searchStr)
-    lat = float(round(geo[0]['geometry']['location']['lat'], 4))
-    lon = float(round(geo[0]['geometry']['location']['lng'], 4))
-    locArray = [lat, lon]
+    # searches for the location's coordinates using the OSM api
+    nominatim = Nominatim()
+    location = Nominatim().query(searchStr)
+    locationObj = location.toJSON()[0]
+    locArray = [locationObj['lat'], locationObj['lon']]
     return locArray
 
 # helper function for weather command that returns a string for the hourly forecast
@@ -361,7 +355,8 @@ def getHourly(lat, lon, len):
     for f in hourlyForecasts['properties']['periods']:
         # datetime object of the time of the object being iterated
         weatherTime = datetime.datetime.strptime(f['startTime'], "%Y-%m-%dT%H:%M:%S%z")
-         # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
+        # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
+        # TODO: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
         if currentTimeGMT.strftime("%I %p") == (datetime.datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")):
             break
         else: # if it's not then add 1 to the index of hourly forecasts to use
