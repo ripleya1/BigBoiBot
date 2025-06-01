@@ -33,20 +33,26 @@ with open(tokenPath, "r") as f:
 def readConfigLines(lines: list[str], lineNum: int):
     return str(lines[lineNum].rsplit("=")[1]).strip() # return everything after the last = in the line
 
+URLFixList = [{"URL": "", "FixURL": ""}]
 # read from config file
 with open(configPath, "r") as j:
     lines = j.readlines()
     playing = readConfigLines(lines, 0)
-    fixTwitterStr = readConfigLines(lines, 1)
-    fixTiktokStr = readConfigLines(lines, 2)
-    fixInstaStr = readConfigLines(lines, 3)
-    fixAllTwitterStr = readConfigLines(lines, 4)
-    fixTwitterUrlStr = readConfigLines(lines, 5)
+    lineNum = 1
+    while(lineNum <= len(lines) - 1): # add to list until we hit the end of the file
+        URLFixList.append({'URL': str(lines[lineNum].rsplit(";")[0]).strip(), 'FixURL': str(lines[lineNum].rsplit(";")[1]).strip()})
+        lineNum += 1
+    print(URLFixList)
+    # fixTwitterStr = readConfigLines(lines, 1)
+    # fixTiktokStr = readConfigLines(lines, 2)
+    # fixInstaStr = readConfigLines(lines, 3)
+    # fixAllTwitterStr = readConfigLines(lines, 4)
+    # fixTwitterUrlStr = readConfigLines(lines, 5)
 
 # initialize variables
 botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
-botVersion = 2.20
+botVersion = 2.50
 embedColor = 0x71368a
 weatherEmbedColor = 0x3498db
 game = discord.Game(playing)
@@ -54,19 +60,19 @@ game = discord.Game(playing)
 # helper function to set the bool variables that indicate 
 # whether or not to fix links from each site 
 # given data from the config file
-def checkFixBool(fixStr: str):
-    fixStr = fixStr.lower()
-    if(fixStr == "t" or fixStr == "true" or fixStr == "1"):
-        return True
-    elif(fixStr == "f" or fixStr == "false" or fixStr == "0"):
-        return False
-    else:
-        return True
+# def checkFixBool(fixStr: str):
+#     fixStr = fixStr.lower()
+#     if(fixStr == "t" or fixStr == "true" or fixStr == "1"):
+#         return True
+#     elif(fixStr == "f" or fixStr == "false" or fixStr == "0"):
+#         return False
+#     else:
+#         return True
 
-fixTwitter = checkFixBool(fixTwitterStr)
-fixTiktok = checkFixBool(fixTiktokStr)
-fixInsta = checkFixBool(fixInstaStr)
-fixAllTwitter = checkFixBool(fixAllTwitterStr)
+# fixTwitter = checkFixBool(fixTwitterStr)
+# fixTiktok = checkFixBool(fixTiktokStr)
+# fixInsta = checkFixBool(fixInstaStr)
+# fixAllTwitter = checkFixBool(fixAllTwitterStr)
 
 # create objects for the api clients
 noaaClient = noaa.NOAA()
@@ -81,17 +87,8 @@ async def on_ready():
     syncedCommands = await bot.tree.sync()
     printLogMessage("Synced " + str(len(syncedCommands)) + " slash commands")
     printLogMessage("Bot live!")
-    if(fixTwitter):
-        printLogMessage("Fixing twitter links")
-    if(fixTiktok):
-        printLogMessage("Fixing tiktok video links")
-    if(fixInsta):
-        printLogMessage("Fixing instagram video links")
-    if(fixAllTwitter and fixTwitter):
-        printLogMessage("Fixing all twitter links")
-    if(fixTwitterUrlStr and fixTwitter):
-        printLogMessage("Fixing twitter links using " + fixTwitterUrlStr)
-
+    for url in URLFixList:
+        printLogMessage("Fixing " + url['URL'] + " links using " + url['FixURL'])
     try:
         await checkRemindersJson()
     except IOError: # if the file isn't there don't bother checking it and make one instead
@@ -437,6 +434,14 @@ def getAlerts(lat, lon, desc):
     embedString = shortenEmbedString(embedString)
     return embedString
 
+def getUrlIndex(msg):
+    i = 0
+    for url in URLFixList:
+        if(msg.find(url['URL']) > -1):
+            i += 1
+            return (msg.find(url['URL']), i)
+    return -1
+
 # on message sent, replaces https://twitter.com, https://x.com, https://www.tiktok.com, and https://www.instagram.com 
 # with https://vxtwitter.com (or whatever is in the config file), https://www.vxtiktok.com, and https://www.ddinstagram.com, 
 # respectively in the message, if found sends a silent message and removes the embed from the original message
@@ -444,39 +449,49 @@ def getAlerts(lat, lon, desc):
 @bot.event
 async def on_message(message: discord.Message):
     if message.author != bot.user: # make sure that the author is not the bot itself
-        if(fixTwitter):
-            strIndexTwt = message.content.find("https://twitter.com")
-            strIndexX = message.content.find("https://x.com")
-            if strIndexTwt != -1 or strIndexX != -1: # check for the twitter link somewhere in the message, note that we're assuming there is an x link OR twitter link not both
-                if(not fixAllTwitter):    
-                    await asyncio.sleep(1) # wait for the embed to render
-                if(fixAllTwitter or (not fixAllTwitter and ((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds))): # if fixAllTwitter is false check that the message has an embed and the embed has a video in it or the embed fails to render
-                    tempUrl = "https://" + fixTwitterUrlStr + ".com"
-                    if strIndexTwt != -1: # twitter.com case
-                        newMsg = await extractAndReplaceURL(message, "https://twitter.com", tempUrl, strIndexTwt)
-                        printLogMessage("Fixed a twitter link")
-                    elif strIndexX != -1: # x.com case
-                        newMsg = await extractAndReplaceURL(message, "https://x.com", tempUrl, strIndexX)
-                        printLogMessage("Fixed an X link")
-                    # if twitter fix fails, delete the message with the fixed link
-                    await asyncio.sleep(5) # wait for the embed to render
-                    if(newMsg.embeds[0]): # make sure that the message embed exists
-                        errorMessages = ["Failed to scan your link!", "Sorry, that post doesn't exist :("]
-                        if(any(sub in newMsg.embeds[0].description for sub in errorMessages)): # check if twitter fix gives failure message
-                            await newMsg.delete()
-                            printLogMessage(fixTwitterUrlStr + " failed. Deleted message.")
+        i, urlIndex = -1, -1
+        for url in URLFixList:
+            i += 1
+            urlIndex = message.content.find(url['URL'])
+            if(urlIndex > -1):
+                print(message.content, url['URL'], urlIndex)
+                break
+        if(urlIndex > -1):
+            await extractAndReplaceURL(message, URLFixList[i]['URL'], URLFixList[i]['FixURL'], urlIndex)
+            printLogMessage("Fixed a " + URLFixList[i]['URL'] + " link")
+        # if(fixTwitter):
+        #     strIndexTwt = message.content.find("https://twitter.com")
+        #     strIndexX = message.content.find("https://x.com")
+        #     if strIndexTwt != -1 or strIndexX != -1: # check for the twitter link somewhere in the message, note that we're assuming there is an x link OR twitter link not both
+        #         if(not fixAllTwitter):    
+        #             await asyncio.sleep(1) # wait for the embed to render
+        #         if(fixAllTwitter or (not fixAllTwitter and ((len(message.embeds) > 0 and message.embeds[0].video) or not message.embeds))): # if fixAllTwitter is false check that the message has an embed and the embed has a video in it or the embed fails to render
+        #             tempUrl = "https://" + fixTwitterUrlStr + ".com"
+        #             if strIndexTwt != -1: # twitter.com case
+        #                 newMsg = await extractAndReplaceURL(message, "https://twitter.com", tempUrl, strIndexTwt)
+        #                 printLogMessage("Fixed a twitter link")
+        #             elif strIndexX != -1: # x.com case
+        #                 newMsg = await extractAndReplaceURL(message, "https://x.com", tempUrl, strIndexX)
+        #                 printLogMessage("Fixed an X link")
+        #             # if twitter fix fails, delete the message with the fixed link
+        #             await asyncio.sleep(5) # wait for the embed to render
+        #             if(newMsg.embeds[0]): # make sure that the message embed exists
+        #                 errorMessages = ["Failed to scan your link!", "Sorry, that post doesn't exist :("]
+        #                 if(any(sub in newMsg.embeds[0].description for sub in errorMessages)): # check if twitter fix gives failure message
+        #                     await newMsg.delete()
+        #                     printLogMessage(fixTwitterUrlStr + " failed. Deleted message.")
                             
-        if(fixTiktok): 
-            strIndexTT = message.content.find("https://www.tiktok.com")
-            if strIndexTT != -1: # check for the tiktok link somewhere in the message
-                await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndexTT)
-                printLogMessage("Fixed a tiktok link")
+        # if(fixTiktok): 
+        #     strIndexTT = message.content.find("https://www.tiktok.com")
+        #     if strIndexTT != -1: # check for the tiktok link somewhere in the message
+        #         await extractAndReplaceURL(message, "https://www.tiktok.com", "https://www.vxtiktok.com", strIndexTT)
+        #         printLogMessage("Fixed a tiktok link")
 
-        if(fixInsta):
-            strIndexInsta = message.content.find("https://www.instagram.com")
-            if strIndexInsta != -1: # check for the tiktok link somewhere in the message
-                await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndexInsta)
-                printLogMessage("Fixed an instagram link")
+        # if(fixInsta):
+        #     strIndexInsta = message.content.find("https://www.instagram.com")
+        #     if strIndexInsta != -1: # check for the tiktok link somewhere in the message
+        #         await extractAndReplaceURL(message, "https://www.instagram.com", "https://www.ddinstagram.com", strIndexInsta)
+        #         printLogMessage("Fixed an instagram link")
 
 # helper function for on_message that extracts a URL from a message, replaces it with another URL, 
 # cuts off the rest of the message, and sends the extracted URL as a silent reply to the original
@@ -490,6 +505,7 @@ async def extractAndReplaceURL(message: discord.Message, oldURL: str, replacemen
         linkTemp = linkTemp[:strIndex]
     else:
         linkTemp = linkTemp
+    linkTemp = "https://" + linkTemp
     newMsg = await message.reply(content = linkTemp, silent = True, mention_author = False) # send a silent message with the fixed link
     await message.edit(suppress=True) # remove the embed of the previous message
     return newMsg

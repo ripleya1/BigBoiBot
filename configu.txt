@@ -1,6 +1,7 @@
 Playing=
-Fix twitter links=1
-Fix tiktok links=1
-Fix instagram links=1
-Fix all twitter links=1
-Twitter fix url=vxtwitter
+tiktok.com;vxtikok.com
+x.com;vxtwitter.com
+twitter.com;vxtwitter.com
+instagram.com;ddinstagram.com
+reddit.com;rxddit.com
+bsky.app;bskyx.app
