@@ -3,3 +3,4 @@ token.txt
 mapskey.txt
 reminders.json
 cache/
+lib/__pycache__
