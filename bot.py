@@ -2,10 +2,10 @@
 import discord
 from discord.ext import commands, tasks
 import asyncio
-import time
-import datetime
-import random
-import json
+from time import time
+from datetime import datetime, timezone
+from random import choice
+from json import dump, load
 from os import path
 from sys import version_info
 from noaa_sdk import noaa
@@ -13,11 +13,11 @@ from OSMPythonTools.nominatim import Nominatim
 
 # helper function that prints a formatted message with the current time given a string
 def printLogMessage(message: str):
-    print((datetime.datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + " " + message)
+    print((datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + " " + message)
 
 # starting bot
 printLogMessage("Bot starting...")
-starttime = datetime.datetime.now()
+starttime = datetime.now()
 
 # file paths
 directory = "" # modify as needed
@@ -62,7 +62,7 @@ nominatim = Nominatim()
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_ready
 @bot.event
 async def on_ready():
-    starttime = datetime.datetime.now()
+    starttime = datetime.now()
     game = discord.Game(playing)
     await bot.change_presence(activity=game)
     syncedCommands = await bot.tree.sync()
@@ -90,16 +90,16 @@ async def checkRemindersJson():
         with open(jsonPath) as j:
             waitBool = False
             reminderData = []
-            reminderData = list(json.load(j))
+            reminderData = list(load(j))
             waitForList = []
 
             for x in reminderData:
-                if int(x['time']) < int(time.time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
+                if int(x['time']) < int(time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
                     channel = bot.get_channel(int(x["channel"]))
                     await channel.send(str(x["author"]) + " " + str(x["reminder"])
                                         + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
                     delete_JSON_Element(x)
-                elif int(x["time"]) > int(time.time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
+                elif int(x["time"]) > int(time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
                     waitBool = True
                     waitForList.append(x)
 
@@ -117,7 +117,7 @@ async def checkRemindersJson():
 @tasks.loop(count=1)
 async def wait(remindList):
     for x in remindList:
-        await asyncio.sleep(x["time"] - int(time.time()))
+        await asyncio.sleep(x["time"] - int(time()))
         channel = bot.get_channel(int(x["channel"]))
         await channel.send(str(x["author"]) + " " + str(x["reminder"]))
         delete_JSON_Element(x)
@@ -125,7 +125,7 @@ async def wait(remindList):
 # resets time counter when bot reconnects
 @bot.event
 async def on_resumed():
-    starttime = datetime.datetime.now()
+    starttime = datetime.now()
 
 # prints to console when an interaction takes place
 @bot.event
@@ -144,7 +144,7 @@ async def help(interaction: discord.Interaction):
 # info command
 @bot.tree.command(description="Sends info about the bot.")
 async def info(interaction: discord.Interaction):
-    uptime = datetime.datetime.now() - starttime # timedelta object
+    uptime = datetime.now() - starttime # timedelta object
     m, s = divmod(uptime.seconds, 60)
     h, m = divmod(m, 60)
     uptimeStr = str("%0d:%02d:%02d:%02d" % (uptime.days, h, m, s))
@@ -168,7 +168,7 @@ async def ping(interaction: discord.Interaction):
 @bot.tree.command(description="Flips a coin.")
 async def coinflip(interaction: discord.Interaction):
     result = ["Heads", "Tails"]
-    await interaction.response.send_message(random.choice(result) + "!")
+    await interaction.response.send_message(choice(result) + "!")
 
 # google command
 @bot.tree.command(description="Sends a Google search link.")
@@ -190,7 +190,7 @@ async def google(interaction: discord.Interaction, search: str):
     timenum="The number of the amount of time until the reminder is sent.",
     timeunits="The units of time of the amount of time until the reminder is sent.")
 async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: discord.app_commands.Choice[str]):
-    ctime = int(time.time())
+    ctime = int(time())
     timeunits = timeunits.value
     timenum = int(timenum)
     remindauthor = str(interaction.user.mention)
@@ -225,11 +225,11 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
     reminderList = []
     if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
         with open(jsonPath, "r") as j:
-            reminderList = list(json.load(j))
+            reminderList = list(load(j))
     reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime, "channel": remindchannel}
     reminderList.append(reminderDict)
     with open(jsonPath, "w") as j:
-        json.dump(reminderList, j)
+        dump(reminderList, j)
     await asyncio.sleep(finalremindtime - ctime)
     await interaction.followup.send(remindauthor + " " + str(reminder))
     delete_JSON_Element(reminderDict)
@@ -237,13 +237,13 @@ async def remind(interaction: discord.Interaction, details: str, timenum: str, t
 # helper function to delete a given JSON element
 def delete_JSON_Element(element):
     with open(jsonPath, "r") as j:
-        reminderData = list(json.load(j))
+        reminderData = list(load(j))
         newReminderData = []
         for x in reminderData:
             if x != element:
                 newReminderData.append(x)
     with open(jsonPath, "w") as k:
-        json.dump(list(newReminderData), k)
+        dump(list(newReminderData), k)
     printLogMessage("JSON element successfully deleted")
 
 # helper function for sorting reminders list
@@ -326,15 +326,15 @@ def search(searchStr):
 def getHourly(lat, lon, len):
     hourlyForecasts = noaaClient.points_forecast(lat, lon, hourly=True)
     # datetime object of the current time in GMT
-    currentTimeGMT = datetime.datetime.now(datetime.timezone.utc)
+    currentTimeGMT = datetime.now(timezone.utc)
 
     i = 0
     for f in hourlyForecasts['properties']['periods']:
         # datetime object of the time of the object being iterated
-        weatherTime = datetime.datetime.strptime(f['startTime'], "%Y-%m-%dT%H:%M:%S%z")
+        weatherTime = datetime.strptime(f['startTime'], "%Y-%m-%dT%H:%M:%S%z")
         # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
-        # TODO: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
-        if currentTimeGMT.strftime("%I %p") == (datetime.datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")):
+        # TODO: datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.fromtimestamp(timestamp, datetime.UTC).
+        if currentTimeGMT.strftime("%I %p") == (datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")):
             break
         else: # if it's not then add 1 to the index of hourly forecasts to use
             i += 1
@@ -344,7 +344,7 @@ def getHourly(lat, lon, len):
     # adding the modified forecast array to the embed
     for f in hourlyForecasts:
         # start time of forecast in the format hour:min am/pm
-        t = datetime.datetime.strptime((f['startTime']), "%Y-%m-%dT%H:%M:%S%z").strftime("%I:%M %p")
+        t = datetime.strptime((f['startTime']), "%Y-%m-%dT%H:%M:%S%z").strftime("%I:%M %p")
         embedString += (t + " - " + str(f['temperature']) + "°" + f['temperatureUnit'] + ", " + f['shortForecast'] + "\n")
 
     embedString = shortenEmbedString(embedString)
@@ -358,9 +358,9 @@ def getDaily(lat, lon, len):
     dailyForecasts = noaaClient.points_forecast(lat, lon, hourly=False)
     for f in dailyForecasts['properties']['periods']:
         # converting the datetime object we're iterating at to seconds since epoch
-        endT = datetime.datetime.strptime(f['endTime'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+        endT = datetime.strptime(f['endTime'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
         # seconds since epoch of current time
-        currentT = datetime.datetime.now().timestamp()
+        currentT = datetime.now().timestamp()
         if endT <= currentT: # if the current time is after the end time of f in dailyForecasts
             # add 1 to the starting index of dailyForecasts
             i += 1
@@ -386,18 +386,18 @@ def getAlerts(lat, lon, desc):
     for f in alerts['features']:
         # this is a datetime object of the end time of the alert
         if(f['properties']['ends'] is not None): # checks to make sure that the ends field is not null
-            endTObj = datetime.datetime.strptime(f['properties']['ends'], "%Y-%m-%dT%H:%M:%S%z")
+            endTObj = datetime.strptime(f['properties']['ends'], "%Y-%m-%dT%H:%M:%S%z")
         else: # if it is use expires instead
-            endTObj = datetime.datetime.strptime(f['properties']['expires'], "%Y-%m-%dT%H:%M:%S%z")
+            endTObj = datetime.strptime(f['properties']['expires'], "%Y-%m-%dT%H:%M:%S%z")
         
         # these are ints of time since epoch
         if(f['properties']['effective'] is not None): # checks to make sure that the effective field is not null
-            startT = datetime.datetime.strptime(f['properties']['effective'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+            startT = datetime.strptime(f['properties']['effective'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
         else: # if it is use onset instead
-            startT = datetime.datetime.strptime(f['properties']['onset'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
+            startT = datetime.strptime(f['properties']['onset'], "%Y-%m-%dT%H:%M:%S%z").timestamp()
         
         endT = endTObj.timestamp()
-        currentT = datetime.datetime.now().timestamp()
+        currentT = datetime.now().timestamp()
         if(endT >= currentT and startT <= currentT): # if the current time is before the end time and after the start time of the alert
             activeAlerts = True
             # add the alert to the embed
