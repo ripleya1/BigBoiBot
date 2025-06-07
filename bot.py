@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands, tasks
 import asyncio
 from time import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from random import choice
 from json import dump, load
 from os import path
@@ -333,8 +333,7 @@ def getHourly(lat, lon, len):
         # datetime object of the time of the object being iterated
         weatherTime = datetime.strptime(f['startTime'], "%Y-%m-%dT%H:%M:%S%z")
         # checks if the string of current hour in gmt is equal to the string of the hour of the place in the forecast converted to gmt (so it'll work with any time zone)
-        # TODO: datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.fromtimestamp(timestamp, datetime.UTC).
-        if currentTimeGMT.strftime("%I %p") == (datetime.utcfromtimestamp(weatherTime.timestamp()).strftime("%I %p")):
+        if currentTimeGMT.strftime("%I %p") == (datetime.fromtimestamp(weatherTime.timestamp(), UTC).strftime("%I %p")):
             break
         else: # if it's not then add 1 to the index of hourly forecasts to use
             i += 1
