@@ -7,6 +7,7 @@ noaaClient = noaa.NOAA()
 nominatim = Nominatim()
 
 descriptionString = "Weather provided by [the National Weather Service](https://www.weather.gov/)."
+weatherEmbedColor = 0x3498db
 
 # helper function to shorten the embed string
 # the embed string needs to be less than 1024 characters because of a limitation with the Discord API

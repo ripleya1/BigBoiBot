@@ -16,7 +16,7 @@ def printLogMessage(message: str):
 
 # starting bot
 printLogMessage("Bot starting...")
-starttime = datetime.now()
+startTime = datetime.now()
 
 # file paths
 directory = "" # modify as needed
@@ -45,19 +45,17 @@ with open(configPath, "r") as j:
         lineNum += 1
 
 # initialize variables
-# TODO: update bot intents
-botIntents = discord.Intents(messages = True, message_content = True, guilds = True, reactions = True, emojis = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
+botIntents = discord.Intents(messages = True, message_content = True, guilds = True) # https://discordpy.readthedocs.io/en/stable/api.html#discord.Intents
 bot = commands.Bot(command_prefix=None, intents=botIntents)
 botVersion = 2.50
-embedColor = 0x71368a
-weatherEmbedColor = 0x3498db
+defaultEmbedColor = 0x71368a
 game = discord.Game(playing)
 
 # runs on bot ready
 # https://discordpy.readthedocs.io/en/stable/api.html#discord.on_ready
 @bot.event
 async def on_ready():
-    starttime = datetime.now()
+    startTime = datetime.now()
     game = discord.Game(playing)
     await bot.change_presence(activity=game)
     syncedCommands = await bot.tree.sync()
@@ -72,55 +70,10 @@ async def on_ready():
         printLogMessage("Created new reminders.json file")
         printLogMessage("No JSON data to load")
 
-# helper function for on_ready that checks the reminders json for any remaining reminders,
-# sends the reminder if the time for it has passed,
-# and waits to send the reminder until the time for it happens if it has not
-# note that if the bot is stopped and then restarted in quick succession and there are reminders in the json
-# on_ready will halt for a bit and this function will take longer to start running
-async def checkRemindersJson():
-    # checking JSON for unsent reminders
-    printLogMessage("Loading JSON data...")
-    # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
-    if path.getsize(jsonPath) > 2:
-        with open(jsonPath) as j:
-            waitBool = False
-            reminderData = []
-            reminderData = list(load(j))
-            waitForList = []
-
-            for x in reminderData:
-                if int(x['time']) < int(time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
-                    channel = bot.get_channel(int(x["channel"]))
-                    await channel.send(str(x["author"]) + " " + str(x["reminder"])
-                                        + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
-                    delete_JSON_Element(x)
-                elif int(x["time"]) > int(time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
-                    waitBool = True
-                    waitForList.append(x)
-
-        if(waitBool): # if there are any elements of the JSON whose time is after the current time
-            # sorts the list of elements by time
-            waitForList.sort(key=sortKey)
-            # start background task that sends reminders later
-            wait.start(waitForList)
-        printLogMessage("JSON data successfully loaded")
-
-    else: # otherwise don't try to open the file because it'll throw an error
-        printLogMessage("No JSON data to load")
-
-# background task that is only run once for the reminders that are backed up in the JSON but have not happened yet
-@tasks.loop(count=1)
-async def wait(remindList):
-    for x in remindList:
-        await asyncio.sleep(x["time"] - int(time()))
-        channel = bot.get_channel(int(x["channel"]))
-        await channel.send(str(x["author"]) + " " + str(x["reminder"]))
-        delete_JSON_Element(x)
-
 # resets time counter when bot reconnects
 @bot.event
 async def on_resumed():
-    starttime = datetime.now()
+    startTime = datetime.now()
 
 # prints to console when an interaction takes place
 @bot.event
@@ -131,7 +84,7 @@ async def on_interaction(interaction: discord.Interaction):
 @bot.tree.command(description="Lists all of the available commands.")
 async def help(interaction: discord.Interaction):
     commmandList = await bot.tree.fetch_commands()
-    embed = discord.Embed(title="Commands", description="Must use a / before all commands", color=embedColor) 
+    embed = discord.Embed(title="Commands", description="Must use a / before all commands", color=defaultEmbedColor) 
     for command in commmandList:
         embed.add_field(name=command.name, value=command.description, inline=False)
     await interaction.response.send_message(content=None, embed=embed)
@@ -139,11 +92,11 @@ async def help(interaction: discord.Interaction):
 # info command
 @bot.tree.command(description="Sends info about the bot.")
 async def info(interaction: discord.Interaction):
-    uptime = datetime.now() - starttime # timedelta object
+    uptime = datetime.now() - startTime # timedelta object
     m, s = divmod(uptime.seconds, 60)
     h, m = divmod(m, 60)
     uptimeStr = str("%0d:%02d:%02d:%02d" % (uptime.days, h, m, s))
-    embed = discord.Embed(title="Bot info", color=embedColor)
+    embed = discord.Embed(title="Bot info", color=defaultEmbedColor)
     embed.add_field(name="Ping", value=str(int(bot.latency * 1000)) + " ms", inline=False)
     embed.add_field(name="Uptime", value=uptimeStr, inline=False)
     embed.add_field(name="Version", 
@@ -185,49 +138,98 @@ async def google(interaction: discord.Interaction, search: str):
     timenum="The number of the amount of time until the reminder is sent.",
     timeunits="The units of time of the amount of time until the reminder is sent.")
 async def remind(interaction: discord.Interaction, details: str, timenum: str, timeunits: discord.app_commands.Choice[str]):
-    ctime = int(time())
-    timeunits = timeunits.value
-    timenum = int(timenum)
-    remindauthor = str(interaction.user.mention)
-    remindchannel = interaction.channel.id
+    cTime = int(time())
+    timeUnitsVal = timeunits.value
+    timeNumInt = int(timenum)
+    remindAuthor = str(interaction.user.mention)
+    remindChannel = interaction.channel.id
     reminder = details
 
-    if (timeunits == "d"):
-        finalremindtime = (timenum * 86400) + ctime
-        remindtimelongstr = "day"
-    elif (timeunits == "h"):
-        finalremindtime = (timenum * 3600) + ctime
-        remindtimelongstr = "hour"
-    elif (timeunits == "m"):
-        finalremindtime = (timenum * 60) + ctime
-        remindtimelongstr = "minute"
-    elif (timeunits == "s"):
-        finalremindtime = timenum + ctime
-        remindtimelongstr = "second"
+    if (timeUnitsVal == "d"):
+        finalRemindTime = (timeNumInt * 86400) + cTime
+        remindTimeLongStr = "day"
+    elif (timeUnitsVal == "h"):
+        finalRemindTime = (timeNumInt * 3600) + cTime
+        remindTimeLongStr = "hour"
+    elif (timeUnitsVal == "m"):
+        finalRemindTime = (timeNumInt * 60) + cTime
+        remindTimeLongStr = "minute"
+    elif (timeUnitsVal == "s"):
+        finalRemindTime = timeNumInt + cTime
+        remindTimeLongStr = "second"
     else:
         await interaction.response.send_message("Invalid time.")
         return
 
-    if timenum == 1:
-        await interaction.response.send_message("Okay " + remindauthor + ", I'll remind you in " + str(timenum) + " " + remindtimelongstr + ".")
-    elif timenum > 1:
-        await interaction.response.send_message("Okay " + remindauthor + ", I'll remind you in " + str(timenum) + " " + remindtimelongstr + "s.")
+    if timeNumInt == 1:
+        await interaction.response.send_message("Okay " + remindAuthor + ", I'll remind you in " + str(timeNumInt) + " " + remindTimeLongStr + ".")
+    elif timeNumInt > 1:
+        await interaction.response.send_message("Okay " + remindAuthor + ", I'll remind you in " + str(timeNumInt) + " " + remindTimeLongStr + "s.")
     else:
         await interaction.response.send_message("Invalid time.")
         return
 
     # add reminder info to JSON
     reminderList = []
-    if path.getsize(jsonPath) > 2: # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
+    if jsonIsEmpty(jsonPath):
         with open(jsonPath, "r") as j:
             reminderList = list(load(j))
-    reminderDict = {"reminder": reminder, "author": remindauthor, "time": finalremindtime, "channel": remindchannel}
+    reminderDict = {"reminder": reminder, "author": remindAuthor, "time": finalRemindTime, "channel": remindChannel}
     reminderList.append(reminderDict)
     with open(jsonPath, "w") as j:
         dump(reminderList, j)
-    await asyncio.sleep(finalremindtime - ctime)
-    await interaction.followup.send(remindauthor + " " + str(reminder))
+    await asyncio.sleep(finalRemindTime - cTime)
+    await interaction.followup.send(remindAuthor + " " + str(reminder))
     delete_JSON_Element(reminderDict)
+
+# helper function for on_ready that checks the reminders json for any remaining reminders,
+# sends the reminder if the time for it has passed,
+# and waits to send the reminder until the time for it happens if it has not
+# note that if the bot is stopped and then restarted in quick succession and there are reminders in the json
+# on_ready will halt for a bit and this function will take longer to start running
+async def checkRemindersJson():
+    # checking JSON for unsent reminders
+    printLogMessage("Loading JSON data...")
+    # checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
+    if path.getsize(jsonPath) > 2:
+        with open(jsonPath) as j:
+            waitFlag = False
+            reminderData = []
+            reminderData = list(load(j))
+            waitForList = []
+
+            for reminder in reminderData:
+                if int(reminder['time']) < int(time()): # if the JSON element's time is before the current time send the reminder now with a message at the beginning
+                    channel = bot.get_channel(int(reminder["channel"]))
+                    await channel.send(str(reminder["author"]) + " " + str(reminder["reminder"])
+                                        + "\n\nNote that this reminder was sent late because of the bot being offline at the time of the original requested reminder time.")
+                    delete_JSON_Element(reminder)
+                elif int(reminder["time"]) > int(time()): # if the JSON element's time is after the current time add it to a list to be run in the background task later
+                    waitFlag = True
+                    waitForList.append(reminder)
+
+        if(waitFlag): # if there are any elements of the JSON whose time is after the current time
+            # sorts the list of elements by time
+            waitForList.sort(key=sortKey)
+            # start background task that sends reminders later
+            wait.start(waitForList)
+        printLogMessage("JSON data successfully loaded")
+
+    else: # otherwise don't try to open the file because it'll throw an error
+        printLogMessage("No JSON data to load")
+
+# background task that is only run once for the reminders that are backed up in the JSON but have not happened yet
+@tasks.loop(count=1)
+async def wait(remindList):
+    for x in remindList:
+        await asyncio.sleep(x["time"] - int(time()))
+        channel = bot.get_channel(int(x["channel"]))
+        await channel.send(str(x["author"]) + " " + str(x["reminder"]))
+        delete_JSON_Element(x)
+
+# helper function that checks if the JSON is greater than 2 bytes (ie has data other than an empty list)
+def jsonIsEmpty(jsonPath):
+    return path.getsize(jsonPath) > 2
 
 # helper function to delete a given JSON element
 def delete_JSON_Element(element):
@@ -241,7 +243,7 @@ def delete_JSON_Element(element):
         dump(list(newReminderData), k)
     printLogMessage("JSON element successfully deleted")
 
-# helper function for sorting reminders list
+# helper function that sorts the reminders list by time
 def sortKey(x):
     return x["time"]
 
@@ -259,8 +261,9 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
     async with interaction.channel.typing():
         embed = discord.Embed()
         embedString = ""
+        forecastTypeVal = ""
         if(forecasttype):
-            forecasttype = forecasttype.value
+            forecastTypeVal = forecasttype.value
         try:
             locArray = weatherLib.search(location)
             lat = locArray[0]
@@ -269,8 +272,8 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             await interaction.response.send_message("Invalid location. Try again.")
             return
         
-        if(forecasttype == "s" or not forecasttype): # note that this is the default
-            embed = discord.Embed(title="Weather for " + location + ":", description=weatherLib.descriptionString, color=weatherEmbedColor)
+        if(not forecastTypeVal == "s" or not forecasttype): # note that this is the default
+            embed = discord.Embed(title="Weather for " + location + ":", description=weatherLib.descriptionString, color=weatherLib.weatherEmbedColor)
             # hourly forecast
             embedString = weatherLib.getHourly(lat, lon, 6)
             embed.add_field(name="Next 6 hours:", value=embedString, inline=False)
@@ -282,20 +285,20 @@ async def weather(interaction: discord.Interaction, location: str, forecasttype:
             embedString = weatherLib.shortenEmbedString(embedString)
             embed.add_field(name="Alerts:", value=embedString, inline=False)
 
-        elif(forecasttype == "h"):
-            embed = discord.Embed(title="Hourly forecast for " + location + ":", description=weatherLib.descriptionString, color=weatherEmbedColor)
+        elif(forecastTypeVal == "h"):
+            embed = discord.Embed(title="Hourly forecast for " + location + ":", description=weatherLib.descriptionString, color=weatherLib.weatherEmbedColor)
             embedString = weatherLib.getHourly(lat, lon, 13)
             embedString = weatherLib.shortenEmbedString(embedString)
             embed.add_field(name="Next 12 hours:", value=embedString, inline=False)
 
-        elif(forecasttype == "d"):
-            embed = discord.Embed(title="Daily forecast for " + location + ":", description=weatherLib.descriptionString, color=weatherEmbedColor)
+        elif(forecastTypeVal == "d"):
+            embed = discord.Embed(title="Daily forecast for " + location + ":", description=weatherLib.descriptionString, color=weatherLib.weatherEmbedColor)
             embedString = weatherLib.getDaily(lat, lon, 15)
             embedString = weatherLib.shortenEmbedString(embedString)
             embed.add_field(name="Next 7 days:", value=embedString, inline=False)
 
-        elif(forecasttype == "a"):
-            embed = discord.Embed(title="Alerts for " + location + ":", description=weatherLib.descriptionString, color=weatherEmbedColor)
+        elif(forecastTypeVal == "a"):
+            embed = discord.Embed(title="Alerts for " + location + ":", description=weatherLib.descriptionString, color=weatherLib.weatherEmbedColor)
             embedString = weatherLib.getAlerts(lat, lon, True)
             embedString = weatherLib.shortenEmbedString(embedString)
             embed.add_field(name="Alerts:", value=embedString, inline=False)

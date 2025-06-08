@@ -45,7 +45,9 @@ Uses [fxreddit](https://github.com/MinnDevelopment/fxreddit) by default to fix R
 
 ## Roadmap/Todo
 - [x] Make URL replacements fully modular
-- [ ] Make the project more Pythonic/modularized (ie make it so the script isn't just one file), and clean up a bit
+- [x] Make the project more Pythonic/modularized (ie make it so the script isn't just one file), and clean up a bit
 - [x] Replace Google Maps API with a new API since they're trying to charge me now ([OpenStreetMap](https://github.com/mocnik-science/osm-python-tools))
-- [ ] Check perms on Discord dev website
+- [x] Check perms on Discord dev website
 - [ ] Bug Fix: Retry deleting embed if list index out of range
+- [ ] Timestamp converter
+- [ ] Unit testing
